@@ -140,3 +140,8 @@ house_polls = read.csv("house_polls.csv")
 nc_house_polls = house_polls %>%
   filter(state == "North Carolina")
 ```
+
+```{r}
+voter_small = readRDS("ncvoter_Statewide_small.rds")
+hist_small = readRDS("ncvhis_Statewide_small.rds")
+```
