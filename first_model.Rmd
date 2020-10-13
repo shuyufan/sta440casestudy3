@@ -72,14 +72,17 @@ model <- function(){
 
   for(j in 2:N_days){
     for(i in 1:N_states){
+      for (q in 1:100){
       #HOW TO GET POSTERIOR PRED DISTRIBUTION?
-      beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+        betaq[i,j,q] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+        compare1[i,j,q] <- ifelse(betaq[i,j,q] > 50, 1, 0)
+      }
+     beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+     BidenWins[i,j] <- sum(compare1[i,j,])/100
     }
   }
-
-  
   #EXERCISE: add hierarchical prior for sigma2_beta and sigma2_y, i.e. sigma2_beta[j] all come from a common distribution 
-  for(j in 1:N_states){
+  for (j in 1:N_states){
       sigma2_y[j] = 1/sigma2_y_inv[j]
       sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
       
@@ -97,13 +100,15 @@ model <- function(){
   mu0 ~ dnorm(50,pow(7.5,-2))
   sigma2_0 = 1/sigma2_0_inv
   sigma2_0_inv ~ dgamma(.5,.5)
+  
+  
 }
 ```
 
 ```{r run_model,eval=TRUE,cache=TRUE}
 
 #be sure to add your added parameters to parameters.to.save
-jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta",
+jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","BidenWins",
                                                                              "p","sigma2_y"),
                   n.iter = 10000)
 
@@ -111,7 +116,11 @@ jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("be
 ```
 
 ```{r}
-jags_sims
+jags_sims$BUGSoutput
+
+BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
+
+hist(BidenWins)
 ```
 
 ```{r}
