@@ -121,6 +121,8 @@ jags_sims$BUGSoutput
 BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
 
 hist(BidenWins)
+
+print(c(quantile(BidenWins, 0.2), quantile(BidenWins, 0.8)))
 ```
 
 ```{r}
