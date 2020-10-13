@@ -1,0 +1,304 @@
+---
+title: "Election Prediction"
+author: "Graham Tierney"
+date: "10/11/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(R2jags)
+
+```
+
+## Set up data
+
+Here we load the polling data and drop duplicate questions. 
+
+```{r load,eval=TRUE}
+
+polls <- read_csv("data/2016_Economist_Polls.csv") %>% 
+  filter(population %in% c("Likely Voters","Registered Voters"),question.iteration == 1) %>% #remove duplicate questions
+  mutate(days_to_election = as.Date("2016-11-08") - end.date,
+         state = ifelse(state == "--","US",state),
+         y = clinton/(clinton + trump)*100)
+
+### EXERCISE: filter polls to only polls 100 days or fewer before the election and the following states: US,WI,OH,PA,NC,FL,VA
+polls <- polls %>% 
+  filter(days_to_election <= 100,state %in% c("US","WI","OH","PA","NC","FL","VA"))
+```
+
+## Create data list
+
+JAGS and Stan neeed the data passed in as a named list. Create that here. Some have been filled in for you
+
+```{r data_list,eval=TRUE}
+states <- polls$state %>% unique
+
+y <- polls$y
+r <- match(polls$state,states)
+t <- polls$days_to_election + 1 #WHY PLUS ONE?
+
+N_polls <- y %>% length
+N_states <- states %>% length
+N_days <- t %>% max
+
+jags_data <- list(y=y,t=t,r=r,
+                  N_polls=N_polls,N_states=N_states,N_days=N_days)
+```
+
+## Write model
+
+The model we will use is $Y_k$, Clinton's share of the two-party vote, is normally distributed with mean $\beta_{jt}$, where the poll ended $t$ days before the election and was conducted on population $j$. Each state has its own observation variance, $\sigma^2_{yj}$ and two-party preferences. Thus, $Y_k \sim N(\beta_{jt},\sigma^2_{yh})$. We use a random walk for $\beta$, $\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$. We will let other states influence each other by placing a hierarchical prior on the model parameters: $\{\sigma^2_{yj},\sigma^2_{\beta j},\beta_{j1}\}$. $\sigma^2_{yj} \sim P_{\sigma_y}$; $\sigma^2_{\beta j} \sim P_{\sigma_\beta}$; $\beta_{j1} \sim P_\beta$. In the code below, everything is set up EXCEPT these hierarchical structures. You can choose whatever distributions $P$ you like. 
+
+```{r model,eval = TRUE}
+model <- function(){
+  for(k in 1:N_polls){
+    y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
+    p[k] = beta[r[k],t[k]] 
+  }
+  for(j in 2:N_days){
+    for(i in 1:N_states){
+      beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+    }
+  }
+  
+  #EXERCISE: add hierarhciacl prior for sigma2_beta and sigma2_y, i.e. sigma2_beta[j] all come from a common distribution 
+  for(j in 1:N_states){
+      sigma2_y[j] = 1/sigma2_y_inv[j]
+      sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
+      
+      sigma2_beta[j] = 1/sigma2_beta_inv[j]
+      sigma2_beta_inv[j] ~ dgamma(nu_beta,nu_beta*tau_beta) 
+      
+      beta[j,1] ~ dnorm(mu0,pow(sigma2_0,-1))
+  }
+  nu_y ~ dunif(0,100)
+  tau_y ~ dunif(0,100)
+  
+  nu_beta ~ dunif(0,100)
+  tau_beta ~ dunif(0,100)
+  
+  mu0 ~ dnorm(50,pow(7.5,-2))
+  sigma2_0 = 1/sigma2_0_inv
+  sigma2_0_inv ~ dgamma(.5,.5)
+}
+```
+
+## Run and analyze results
+
+```{r run_model,eval=TRUE,cache=TRUE}
+
+#be sure to add your added parameters to parameters.to.save
+jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta",
+                                                                             "p","sigma2_y"),
+                  n.iter = 10000)
+
+
+```
+
+Now, lets look at some results. 
+
+1) For one or two states, plot the expected value of a poll of that state ($\beta_{jt}$), 95\% CIs, and observed poll results. Does your model look good? 
+
+2) Compare the implied binomial variance $p(1-p)/n$ to the estimated variance $\sigma^2_{yj}$ for one or two states. Do the quantities look similar? 
+
+3) Who do you predict is the winner in each state? Give a forecast electoral college vote split by awarding all non-modeled results to the actual winner. EC votes: US-0, FL-29, NC-15, OH-18, PA-20, VA-13, WI-10. 
+
+4) How does the probability of winning one state affect another? Estimate P(Clinton wins NC) and P(Clinton wins NC|Clinton loses OH), or pick your own pair of states. Are the probabilities different? Should they be? 
+
+5) Finally, try removing all data from the final month of the campaign from `jags_data`, then re-estimate the model. Do your predictions change? 
+
+```{r solutions}
+# 1) 
+poll_plot_data <- tibble(y=jags_data$y,t=jags_data$t %>% as.integer(),state = states[jags_data$r])
+
+beta_plot_data <- lapply(1:N_states,function(st){
+  sims <- jags_sims$BUGSoutput$sims.list$beta[,st,]
+  data.frame(state = states[st],t=1:N_days,mean=colMeans(sims),lb=apply(sims,2,quantile,probs=.025),ub=apply(sims,2,quantile,probs=.975))
+}) %>% 
+  bind_rows()
+
+left_join(beta_plot_data,poll_plot_data) %>% 
+  ggplot(aes(x=t)) + 
+  geom_line(aes(y=mean)) + 
+  geom_ribbon(aes(ymin = lb,ymax = ub),alpha = .2) + 
+  geom_point(aes(y=y)) + 
+  scale_x_reverse() + 
+  facet_wrap(~ state)
+
+# 2) 
+
+poll_plot_data$p <- jags_sims$BUGSoutput$mean$p
+poll_plot_data$sigma2y <- jags_sims$BUGSoutput$mean$sigma2_y[jags_data$r]
+poll_plot_data$binom_v <- (poll_plot_data$p)*(100-poll_plot_data$p)/polls$number.of.observations
+
+poll_plot_data %>% 
+  ggplot(aes(x=binom_v)) +
+  geom_density() + 
+  geom_vline(aes(xintercept = sigma2y),color = "red") + 
+  facet_wrap(~ state)
+
+# 3) 
+
+elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
+colnames(elec_sims) <- states
+(elec_sims>50) %>% colMeans() #P(Clinton Win) each state
+
+#in other states: Clinton: 232-13, Trump: 306-29-18-15-10-20
+c_ex_votes <- 232-13; t_ex_votes <- 306-29-18-15-10-20
+ec_votes <- ((elec_sims>50) %*% diag(c(0,29,15,18,20,13,10))) %>% rowSums() + 232
+hist(ec_votes)
+mean(ec_votes>=270)
+
+# 4) 
+sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
+colnames(sims) <- states
+sims %>% {.>50} %>% colMeans() #independent probs
+sims[sims[,4]<50,] %>% {.>50} %>% colMeans() #conditional probs
+
+
+# 5)
+make_data <- function(data){
+  states <- data$state %>% unique
+
+  y <- data$y
+  r <- match(data$state,states)
+  t <- data$days_to_election + 1 #WHY PLUS ONE?
+  
+  N_polls <- y %>% length
+  N_states <- states %>% length
+  N_days <- t %>% max
+  
+  jags_data <- list(y=y,t=t,r=r,
+                    N_polls=N_polls,N_states=N_states,N_days=N_days)
+  
+  return(jags_data)
+}
+
+jags_data_1mo <- make_data(polls %>% filter(days_to_election>=30))
+
+jags_sims_1mo <- jags(data = jags_data_1mo,model.file = model,parameters.to.save = c("beta","sigma2_beta",
+                                                                             "p","sigma2_y"),
+                  n.iter = 10000)
+elec_1mo <- jags_sims_1mo$BUGSoutput$sims.list$beta[,,1]
+colnames(elec_1mo) <- states
+(elec_1mo>50) %>% colMeans() #P(Clinton Win) each state
+
+```
+
+## Bonus: Multivariate
+
+Now, instead of having all states equally correlated with each other via the hierarchy, we will estimate the correlation structure. Now $Y_k \sim N(\theta_{jt},\sigma^2_{yj})$. The evolution is as follows: 
+
+\[\theta_{\cdot t} \sim MVN(\theta_{\cdot t-1},\Sigma)\]
+
+Using same priors on $\theta_{\cdot 1}$, the day of the election, as before, rewrite the jags code to implement the above model. 
+
+```{r mv_model}
+model_mv <- function(){
+  for(k in 1:N_polls){
+    y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
+    p[k] = theta[r[k],t[k]]
+  }
+  for(j in 2:N_days){
+    theta[1:N_states,j] ~ dmnorm(theta[1:N_states,j-1],Phi)
+  }
+  Phi ~ dwish(I_states,N_states+1) #fill in wishart parameters, google JAGS wishart distribution should turn it up
+  Sigma = inverse(Phi)
+  #which, Phi or Sigma is the covariance and which is the precision? 
+  
+  #optional: theta[1:N_states,1] ~ dmnorm(mu0,s0) #define mu0 and s0 in your jags_data object
+  
+  #Use your hierarhciacl prior for sigma2_y from before 
+  for(j in 1:N_states){
+      sigma2_y[j] = 1/sigma2_y_inv[j]
+      sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
+      
+      theta[j,1] ~ dnorm(mu0,pow(sigma2_0,-1))
+  }
+  nu_y ~ dunif(0,100)
+  tau_y ~ dunif(0,100)
+  
+  nu_beta ~ dunif(0,100)
+  tau_beta ~ dunif(0,100)
+  
+  mu0 ~ dnorm(50,pow(7.5,-2))
+  sigma2_0 = 1/sigma2_0_inv
+  sigma2_0_inv ~ dgamma(.5,.5)
+}
+```
+
+Re-estimate the model. 
+
+```{r run_model_mv,eval=TRUE,cache=TRUE}
+jags_data$I_states <- diag(N_states)
+
+
+#be sure to add your added parameters to parameters.to.save
+jags_sims_mv <- jags(data = jags_data,model.file = model_mv,parameters.to.save = c("theta","Sigma",
+                                                                                "p","sigma2_y"),
+                  n.iter = 10000)
+```
+
+Now, how does the probability of winning one state affect another? Estimate P(Clinton wins NC) and P(Clinton wins NC|Clinton loses OH), or pick your own pair of states. Are the probabilities different? 
+
+```{r mv_cond_probs}
+sims <- jags_sims_mv$BUGSoutput$sims.list$theta[,,1]
+colnames(sims) <- states
+sims %>% {.>50} %>% colMeans()
+sims[sims[,4]<50,] %>% {.>50} %>% colMeans()
+```
+
+Try to visualize the correlation matrix. The `get_heatmap` function below will take a correlation matrix and make a heatmap. 
+
+```{r heatmap}
+
+reorder_cormat <- function(cormat){
+  # Use correlation between variables as distance
+  dd <- as.dist((1-cormat)/2)
+  hc <- hclust(dd)
+  cormat <-cormat[hc$order, hc$order]
+}
+get_upper_tri <- function(cormat){
+  cormat[lower.tri(cormat)]<- NA
+  return(cormat)
+}
+
+get_heatmap <- function(cormat){
+  cormat %>% 
+    cov2cor() %>% 
+    reorder_cormat %>% 
+    get_upper_tri %>% 
+    reshape2::melt(na.rm = TRUE) %>% 
+    ggplot(aes(Var2, Var1, fill = value))+
+    geom_tile(color = "white")+
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                         midpoint = 0, limit = c(-1,1), space = "Lab", 
+                         name="Pearson\nCorrelation") +
+    theme_minimal()+ # minimal theme
+    labs(x="",y="") + 
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                     size = 12, hjust = 1))+
+    coord_fixed()
+}
+```
+
+
+```{r plot_sims}
+cor_sims <- array(NA,dim = jags_sims_mv$BUGSoutput$sims.list$Sigma %>% dim)
+for(i in 1:dim(cor_sims)[1]){
+  cor_sims[i,,] <- cov2cor(jags_sims_mv$BUGSoutput$sims.list$Sigma[i,,])
+}
+cor_mean <- apply(cor_sims,c(2,3),mean)
+colnames(cor_mean) <- states
+rownames(cor_mean) <- states
+
+#full heatmap
+get_heatmap(cor_mean)
+
+```
