@@ -1,0 +1,85 @@
+---
+title: "DCC_data_EDA"
+author: "Alice Liao"
+date: "10/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message=FALSE,warning=FALSE,echo=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+# Load Registered Voter Dataset
+```{r}
+# data dictionary: https://s3.amazonaws.com/dl.ncsbe.gov/data/layout_ncvoter.txt
+voter_registr = readRDS("ncvoter_Statewide_small.rds")
+```
+
+### Summary Statistics
+```{r}
+nrow(voter_registr)
+#head(voter_registr)
+
+# data cleaning
+voter_registr <- voter_registr %>%
+  mutate(county_id = as.factor(county_id),
+         voter_reg_num = as.numeric(voter_reg_num),
+         registr_dt = as.Date(registr_dt, "%m/%d/%y"),
+         current_age = 2020 - birth_year) 
+
+head(voter_registr)
+
+summary(voter_registr)
+
+# 981476 NAs for cong_dist_abbrv
+# 1877 NAs for registr_dt
+
+# birth_year & birth_age are problematic
+# birth_age = "end of year age", not sure as of which year?
+voter_registr %>%
+  filter(birth_year < 1910) %>%
+  nrow()
+
+voter_registr %>%
+  filter(birth_age > 100) %>%
+  nrow()
+
+```
+# Load Voter History Dataset
+```{r}
+# data dictionary: https://s3.amazonaws.com/dl.ncsbe.gov/data/layout_ncvhis.txt
+# note: If county_id (county_desc) different from voted_county_id (voted_county_desc), this indicates the ballot chosen in primary by an unaffiliated voter
+
+voter_hist = readRDS("ncvhis_Statewide_small.rds")
+```
+
+### Summary Statistics
+```{r}
+nrow(voter_hist)
+#head(voter_hist)
+
+# data cleaning
+voter_hist <- voter_hist %>%
+  mutate(county_id = as.factor(county_id),
+         #voter_reg_num = as.character(voter_reg_num),
+         voted_party_cd = as.factor(voted_party_cd),
+         voted_county_id = as.factor(voted_county_id))
+
+head(voter_hist)
+
+summary(voter_hist)
+# contains only 2016 general election and 2018 midterm election
+# 73 missing? voted_party values
+```
+
+# Merge
+
+```{r}
+#left_join(voter_registr, voter_hist, by = c("county_id", "voter_reg_num"))
+```
+
