@@ -1,0 +1,41 @@
+---
+title: "who_votes_eda"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+```{r}
+library(tidyverse)
+```
+## Merging Data
+
+```{r}
+voter_small = readRDS("ncvoter_Statewide_small.rds") %>%
+  mutate(voter_reg_num = str_remove(voter_reg_num, "^0+")) 
+  
+voter_small$voter_reg_num[which(voter_small$voter_reg_num=="")] <- 0
+
+voter_small = voter_small %>%
+  mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
+
+hist_small = readRDS("ncvhis_Statewide_small.rds") %>%
+  mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
+
+voter_small[which(voter_small$voter_reg_num=="")] <- 0
+voter_hist = merge(voter_small, hist_small, by = "unique_id", all.y = TRUE)
+
+```
+
+```{r}
+voter_small_samp = sample_n(voter_small, 1000000) 
+hist_small_samp = sample_n(hist_small, 1000000) 
+```
+
+```{r}
+
+```
+

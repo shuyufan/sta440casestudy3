@@ -1,0 +1,213 @@
+---
+title: "senate_model"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries
+
+```{r pressure, echo=FALSE}
+library(lubridate)
+library(tidyverse)
+library(R2jags)
+```
+
+## Data
+
+```{r}
+
+senate_polls = read.csv("senate_polls.csv")
+
+states_fixed = as.character(senate_polls$state)
+states_fixed[which(senate_polls$race_id == "7780")] = "Georgia-Special"
+
+# test = senate_polls[which(senate_polls$race_id == "7780"),]
+# 
+# test2 = test %>% group_by(question_id, candidate_party) %>% summarise(x = sum(pct), summarize_each())
+
+senate_polls$state = as.factor(states_fixed)
+
+dem_results = senate_polls[senate_polls$candidate_party == "DEM",]
+dem_cols = colnames(dem_results)
+cols_to_paste = (length(dem_cols)-3):length(dem_cols)
+dem_cols[cols_to_paste] = paste(dem_cols[cols_to_paste], "DEM", sep="_")
+colnames(dem_results) = dem_cols
+
+rep_results = senate_polls[senate_polls$candidate_party == "REP",]
+rep_cols = colnames(rep_results)
+rep_cols[cols_to_paste] = paste(rep_cols[cols_to_paste], "REP", sep="_")
+colnames(rep_results) = rep_cols
+
+rep_small = rep_results %>% select(question_id, candidate_id_REP, candidate_name_REP, pct_REP)
+
+final_polls = left_join(dem_results, rep_small, by="question_id")
+
+final_polls$days_to_election = as.numeric(as.Date("11/3/2020", "%m/%d/%y")-as.Date(final_polls$end_date, "%m/%d/%y"))
+
+final_polls = final_polls %>% filter(days_to_election <= 90)
+
+safe_dem = c("Massachusetts", "Rhode Island", "Delaware", "New Hampshire", "New Jersey", "Oregon", "Illinois", "Virginia")
+
+safe_rep = c("Arkansas", "Wyoming", "Nebraska", "South Dakota", "West Virginia", "Idaho", "Oklahoma", "Tennessee", "Louisiana", "Kentucky", "Mississippi")
+
+final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) %>% filter(!(state == "Georgia-Special"))
+
+final_polls$votes_DEM = round( (final_polls$pct_DEM/100) * final_polls$sample_size)
+final_polls$votes_REP = round( (final_polls$pct_REP/100) * final_polls$sample_size)
+
+final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
+```
+
+```{r}
+states <- c(as.character(unique(final_polls$state)))
+
+y <- final_polls$y
+r <- match(final_polls$state,states)
+t <- final_polls$days_to_election + 1 #WHY PLUS ONE?
+
+N_polls <- y %>% length
+N_states <- states %>% length
+N_days <- t %>% max
+
+jags_data <- list(y=y,t=t,r=r,
+                  N_polls=N_polls,N_states=N_states,N_days=N_days)
+```
+
+
+
+
+```{r model,eval = TRUE}
+model <- function(){
+  
+  for(k in 1:N_polls){
+    y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
+    p[k] = beta[r[k],t[k]] 
+  }
+  
+  for(j in 2:N_days){
+    for(i in 1:N_states){
+      beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+    }
+  }
+
+
+  # for(j in 2:N_days){
+  #   for(i in 1:N_states){
+  #     for (q in 1:100){
+  #     #HOW TO GET POSTERIOR PRED DISTRIBUTION?
+  #       betaq[i,j,q] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+  #       compare1[i,j,q] <- ifelse(betaq[i,j,q] > 50, 1, 0)
+  #     }
+  #    beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+  #    BidenWins[i,j] <- sum(compare1[i,j,])/100
+  #   }
+  # }
+  
+  #EXERCISE: add hierarchical prior for sigma2_beta and sigma2_y, i.e. sigma2_beta[j] all come from a common distribution 
+  for (j in 1:N_states){
+      sigma2_y[j] = 1/sigma2_y_inv[j]
+      sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
+      
+      sigma2_beta[j] = 1/sigma2_beta_inv[j]
+      sigma2_beta_inv[j] ~ dgamma(nu_beta,nu_beta*tau_beta) 
+      
+      beta[j,1] ~ dnorm(mu0,pow(sigma2_0,-1))
+  }
+  nu_y ~ dunif(0,100)
+  tau_y ~ dunif(0,100)
+  
+  nu_beta ~ dunif(0,100)
+  tau_beta ~ dunif(0,100)
+  
+  mu0 ~ dnorm(50,pow(7.5,-2))
+  sigma2_0 = 1/sigma2_0_inv
+  sigma2_0_inv ~ dgamma(.5,.5)
+  
+  
+}
+```
+
+```{r run_model,eval=TRUE,cache=TRUE}
+
+#be sure to add your added parameters to parameters.to.save
+jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),
+                  n.iter = 10000)
+
+
+```
+
+```{r eval=FALSE}
+jags_sims$BUGSoutput
+
+BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
+
+hist(BidenWins)
+
+print(c(quantile(BidenWins, 0.2), quantile(BidenWins, 0.8)))
+```
+
+## Not Required: Win Probability by State
+
+```{r}
+elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
+colnames(elec_sims) <- states
+(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+```
+
+## Probability of Republican Senate Control
+
+```{r}
+preds = (elec_sims>50) %>% colMeans()
+dem_wins = length(preds>0.5)
+
+#in other states: Biden: 232-13, Trump: 306-29-18-15-10-20
+#b_ex_votes <- 232-13; t_ex_votes <- 306-29-18-15-10-20
+
+dem_wins = c()
+
+for (i in 1:nrow(elec_sims)) {
+  preds = elec_sims[i,]
+  dem_wins = rbind(dem_wins, sum(preds>50))
+}
+
+dem_noelection = 35
+dem_safe = length(safe_dem)
+
+dem_needed = 51 - (dem_noelection + dem_safe)
+
+prob_dem_control = mean(dem_wins > dem_needed)
+
+prob_rep_control = 1-prob_dem_control
+prob_rep_control
+
+# rep_noelection = 30
+# rep_safe = length(safe_rep)
+
+```
+
+## Point, Interval Estimates for Cunningham (D) in NC Senate
+
+```{r}
+elec_sims_df = data.frame(elec_sims)
+
+#nc_index = which(states == "North Carolina")
+mean(elec_sims_df$North.Carolina)
+quantile(elec_sims_df$North.Carolina, c(0.025, 0.975))
+
+# ec_votes_inc_states <- ((elec_sims>50) %*% diag(c(20, 10, 0, 16, 3, 6, 6, 18, 16, 14, 11, 29, 15, 38, 4, 10, 9, 10, 10, 5, 3, 4, 5, 6, 3, 29, 7, 6, 55, 3, 8, 13, 12, 3, 8, 6, 9, 9, 11, 7, 4, 11))) %>% rowSums() #+ 232
+
+# ec_votes = ec_votes_inc_states+7+4+20+4+3 #anything else Biden should win (CT, Hawaii, IL, RI) #DC
+
+# anything else for Trump (6 Arkansas, 5 Nebraska, 11 Tennessee, 3 S Dakota, 3 Wyoming) 
+
+# hist(ec_votes)
+
+# pmean = ec_votes>=270
+# mean(ec_votes>=270) 
+#print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
+
+```
+
