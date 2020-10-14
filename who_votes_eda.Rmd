@@ -25,9 +25,7 @@ voter_small = voter_small %>%
 hist_small = readRDS("ncvhis_Statewide_small.rds") %>%
   mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
 
-voter_small[which(voter_small$voter_reg_num=="")] <- 0
 voter_hist = merge(voter_small, hist_small, by = "unique_id", all.y = TRUE)
-
 ```
 
 ```{r}

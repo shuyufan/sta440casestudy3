@@ -75,6 +75,10 @@ head(voter_hist)
 summary(voter_hist)
 # contains only 2016 general election and 2018 midterm election
 # 73 missing? voted_party values
+# could it be the vote wasn't recorded? empty ballot? unclear marking?
+
+# 23% of data has "undesignated" in the hispanic/latino column
+# also if someone doesn't put in race they also don't input ethnicity
 ```
 
 # Merge
