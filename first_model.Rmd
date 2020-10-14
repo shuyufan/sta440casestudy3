@@ -63,24 +63,23 @@ jags_data <- list(y=y,t=t,r=r,
 
 ```{r model,eval = TRUE}
 model <- function(){
-  
   for(k in 1:N_polls){
     y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
     p[k] = beta[r[k],t[k]] 
   }
   
-
   for(j in 2:N_days){
     for(i in 1:N_states){
-      for (q in 1:100){
-      #HOW TO GET POSTERIOR PRED DISTRIBUTION?
-        betaq[i,j,q] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+      for (q in 1:100) {
+        # HOW TO GET POSTERIOR PRED DISTRIBUTION?
+        betaq[i,j,q] ~ dnorm(betaq[i,j-1,q],pow(sigma2_beta[i],-1))
         compare1[i,j,q] <- ifelse(betaq[i,j,q] > 50, 1, 0)
       }
-     beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
-     BidenWins[i,j] <- sum(compare1[i,j,])/100
+      beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+      BidenWins[i,j] <- sum(compare1[i,j,])/100
     }
   }
+  
   #EXERCISE: add hierarchical prior for sigma2_beta and sigma2_y, i.e. sigma2_beta[j] all come from a common distribution 
   for (j in 1:N_states){
       sigma2_y[j] = 1/sigma2_y_inv[j]
@@ -100,7 +99,6 @@ model <- function(){
   mu0 ~ dnorm(50,pow(7.5,-2))
   sigma2_0 = 1/sigma2_0_inv
   sigma2_0_inv ~ dgamma(.5,.5)
-  
   
 }
 ```
@@ -150,9 +148,4 @@ print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
 house_polls = read.csv("house_polls.csv")
 nc_house_polls = house_polls %>%
   filter(state == "North Carolina")
-```
-
-```{r}
-voter_small = readRDS("ncvoter_Statewide_small.rds")
-hist_small = readRDS("ncvhis_Statewide_small.rds")
 ```
