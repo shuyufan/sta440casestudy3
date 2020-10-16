@@ -77,14 +77,6 @@ summary(voter_hist)
 # 73 missing? voted_party values
 ```
 
-# Merge
 
-```{r}
-#merge(voter_registr, voter_hist, by = c("county_id", "voter_reg_num"))
-```
 
-```{r}
-#voter_registr_small <- voter_registr[sample(nrow(voter_registr), 1000),]
-
-```
 
