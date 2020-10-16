@@ -33,9 +33,15 @@ voter_hist = merge(voter_small, hist_small, by = "unique_id", all.y = TRUE)
 ```{r}
 voter_small_samp = sample_n(voter_small, 1000000) 
 hist_small_samp = sample_n(hist_small, 1000000) 
+merge_small_samp = sample_n(voter_hist, 1000000) 
 ```
 
 ```{r}
-
+density_age_party <- ggplot(merge_small_samp, aes(birth_age,color=voted_party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
+stacked_race_party <- ggplot(merge_small_samp, aes(race_code,fill=voted_party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+stacked_county_party <- ggplot(merge_small_samp, aes(county_id.x,fill=voted_party_cd)) + labs(y="Density", x = "County", title = "County v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+stacked_county_race <- ggplot(merge_small_samp, aes(county_id.x,fill=race_code)) + labs(y="Density", x = "County", title = "County v. Race", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+stacked_state_race <- ggplot(merge_small_samp, aes(birth_state,fill=race_code)) + labs(y="Density", x = "Birth State", title = "Birth State v. Race", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
 ```
 
