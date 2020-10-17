@@ -34,6 +34,9 @@ voter_hist = merge(voter_small, hist_small, by = "unique_id", all.y = TRUE)
 voter_small_samp = sample_n(voter_small, 1000000) 
 hist_small_samp = sample_n(hist_small, 1000000) 
 merge_small_samp = sample_n(voter_hist, 1000000) 
+# TODO filter the data set and only leaves the 2016 data points to focus on the presidential election year
+# TODO mapping individuals to 13 districts if NA cong_dist_abbrv
+# TODO remove weird birth dates and overlapping districts
 ```
 
 ```{r}
