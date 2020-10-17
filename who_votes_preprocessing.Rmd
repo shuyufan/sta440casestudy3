@@ -139,6 +139,24 @@ voter_hist_districts <- voter_hist_districts %>%
 saveRDS(voter_hist_districts, "filtered_ncvoterhis.rds")
 ```
 
+```{r}
+library(mice)
+tempData <- mice(voter_hist_districts, m=5, maxit=10, meth='pmm', seed=500)
+```
 
+```{r}
+completedData1 <- complete(tempData,1)
+saveRDS(completedData1, "imp1_filtered_ncvoterhis.rds")
 
+completedData2 <- complete(tempData,2)
+saveRDS(completedData2, "imp2_filtered_ncvoterhis.rds")
 
+completedData3 <- complete(tempData,3)
+saveRDS(completedData3, "imp3_filtered_ncvoterhis.rds")
+
+completedData4 <- complete(tempData,4)
+saveRDS(completedData4, "imp4_filtered_ncvoterhis.rds")
+
+completedData5 <- complete(tempData,5)
+saveRDS(completedData5, "imp5_filtered_ncvoterhis.rds")
+```
