@@ -1,0 +1,162 @@
+---
+title: "Data Preprocessing"
+author: "Justina Zou"
+date: "10/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Libraries
+
+```{r}
+library(tidyverse)
+```
+
+# Read and merge
+
+Copied from who_votes_eda.Rmd.
+
+```{r}
+voter_small = readRDS("ncvoter_Statewide_small.rds") %>%
+  mutate(voter_reg_num = str_remove(voter_reg_num, "^0+")) 
+  
+voter_small$voter_reg_num[which(voter_small$voter_reg_num=="")] <- 0
+
+voter_small = voter_small %>%
+  mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
+
+hist_small = readRDS("ncvhis_Statewide_small.rds") %>%
+  mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
+
+voter_small[which(voter_small$voter_reg_num=="")] <- 0
+voter_hist = merge(voter_small, hist_small, by = "unique_id", all.y = TRUE)
+rm(voter_small, hist_small)
+```
+
+# Filter for 2016 election and age
+
+## How many older than 116?
+
+```{r}
+nrow(voter_hist %>% filter(birth_age > 116))
+```
+
+# Filter
+
+```{r}
+voter_hist_filtered <- voter_hist %>% 
+  filter(election_desc == "11/08/2016 GENERAL", 
+         birth_age <= 116) # oldest NC resident is 116 years old
+```
+
+# Fix missing cong_dist_abbrv
+
+## How many are missing, and how many can't be resolved?
+
+```{r}
+nrow(voter_hist_filtered %>% 
+  filter(is.na(cong_dist_abbrv)))
+
+cant_borrow <- voter_hist_filtered %>% 
+  group_by(county_desc.x, cong_dist_abbrv) %>% 
+  summarise(n=n()) %>% 
+  group_by(county_desc.x) %>%
+  summarise(n=n()) %>% 
+  filter(n>2) %>% 
+  select(county_desc.x)
+cant_borrow <- cant_borrow$county_desc.x
+
+nrow(voter_hist_filtered %>% 
+       filter(is.na(cong_dist_abbrv)) %>% 
+       filter(county_desc.x %in% cant_borrow))
+
+nrow(voter_hist_filtered %>% 
+       filter(is.na(cong_dist_abbrv)) %>% 
+       filter(county_desc.x %in% cant_borrow)) / nrow(voter_hist_filtered)
+```
+
+## Let's resolve the ones we can
+
+```{r}
+can_borrow <- voter_hist_filtered %>% 
+  group_by(county_desc.x, cong_dist_abbrv) %>% 
+  summarise(n=n()) %>% 
+  group_by(county_desc.x) %>%
+  summarise(n=n()) %>% 
+  filter(n==2) %>% 
+  select(county_desc.x)
+can_borrow <- can_borrow$county_desc.x
+can_borrow <- as.character(can_borrow)
+
+# Create a map from county to district
+# Match by county because it's much less likely 
+# for everyone in a county to only come from one district
+# while zip codes might result in false matches
+county2district <- voter_hist_filtered %>% 
+  filter(county_desc.x %in% can_borrow,
+         !is.na(cong_dist_abbrv)) %>% 
+  select(county_desc.x, cong_dist_abbrv) %>% 
+  unique()
+row.names(county2district) <- county2district$county_desc.x
+county2district$county_desc.x <- as.character(county2district$county_desc.x)
+
+voter_hist_districts <- voter_hist_filtered %>% 
+  mutate(county_desc.x = as.character(county_desc.x)) %>%
+  mutate(cong_dist_abbrv = case_when(
+    !is.na(cong_dist_abbrv) ~ as.integer(cong_dist_abbrv),
+    county_desc.x %in% can_borrow ~ as.integer(county2district[as.character(county_desc.x), 2]),
+    TRUE ~ as.integer(NA)
+  )) %>% 
+  mutate(cong_dist_abbrv = as.factor(cong_dist_abbrv))
+still_missing_zipcodes <- voter_hist_districts %>% 
+  filter(is.na(cong_dist_abbrv))
+still_missing_zipcodes <- still_missing_zipcodes$zip_code
+# Most zip codes are missing
+```
+
+# Filter missing districts
+
+```{r}
+voter_hist_districts <- voter_hist_districts %>% 
+  filter(!is.na(cong_dist_abbrv))
+```
+
+# Remove duplicate columns from merging
+
+```{r}
+voter_hist_districts <- voter_hist_districts %>% 
+  select(-c("county_desc.y", "county_id.y", "voter_reg_num.x", "voter_reg_num.y")) %>% 
+  rename(county_desc = county_desc.x, 
+         county_id = county_id.x)
+```
+
+# Write to rds
+
+```{r}
+saveRDS(voter_hist_districts, "filtered_ncvoterhis.rds")
+```
+
+```{r}
+library(mice)
+tempData <- mice(voter_hist_districts, m=5, maxit=10, meth='pmm', seed=500)
+```
+
+```{r}
+completedData1 <- complete(tempData,1)
+saveRDS(completedData1, "imp1_filtered_ncvoterhis.rds")
+
+completedData2 <- complete(tempData,2)
+saveRDS(completedData2, "imp2_filtered_ncvoterhis.rds")
+
+completedData3 <- complete(tempData,3)
+saveRDS(completedData3, "imp3_filtered_ncvoterhis.rds")
+
+completedData4 <- complete(tempData,4)
+saveRDS(completedData4, "imp4_filtered_ncvoterhis.rds")
+
+completedData5 <- complete(tempData,5)
+saveRDS(completedData5, "imp5_filtered_ncvoterhis.rds")
+```
