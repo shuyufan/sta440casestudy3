@@ -171,15 +171,30 @@ colnames(elec_sims) <- districts
 
 ```
 
-## Point Estimates for Dem Vote Share by District
+## Point Estimates for Rep Vote Share by District
 
 ```{r}
-elec_sims %>% apply(2, mean)
+dem_vote_shares = elec_sims %>% apply(2, mean)
+dem_vote_shares[12] = 100
+
+rep_vote_shares = 100 - dem_vote_shares
+rep_vote_shares
 ```
 
-## Interval Estimates for Dem Vote Share by District
+## Interval Estimates for Rep Vote Share by District
 
 ```{r}
-elec_sims %>% apply(2, quantile, probs=c(0.025, 0.975))
+dem_intervals = elec_sims %>% apply(2, quantile, probs=c(0.025, 0.975))
+dem_intervals = unname(dem_intervals)
+dem_intervals[1,12] = 99.8
+dem_intervals[2,12] = 100
+
+rep_intervals = 100 - dem_intervals
+for (i in 1:length(districts)) {
+  print(districts[i])
+  print(rep_intervals[2,i])
+  print(rep_intervals[1,i])
+  cat("\n")
+}
 ```
 
