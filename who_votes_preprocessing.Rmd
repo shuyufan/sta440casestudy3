@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+library(stringr)
+library(stringi)
 ```
 
 # Read and merge
@@ -22,7 +24,7 @@ Copied from who_votes_eda.Rmd.
 ```{r}
 voter_small = readRDS("ncvoter_Statewide_small.rds") %>%
   # mutate(voter_reg_num = str_remove(voter_reg_num, "^0+")) %>%
-  filter(birth_age <= 116) %>%
+  filter(birth_age <= 116) %>% # oldest NC resident is 116 years old
   dplyr::select(-birth_year, -status_cd, -reason_cd)
 
 # need this because there is 0000000  
@@ -33,19 +35,18 @@ voter_small = readRDS("ncvoter_Statewide_small.rds") %>%
 
 hist_small = readRDS("ncvhis_Statewide_small.rds") %>%
   #mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_")) %>% 
-  filter(election_desc == "11/08/2016 GENERAL") %>%
+  filter(election_desc == "11/08/2016 GENERAL") %>% # only looking at 2016 general election
   dplyr::select(-election_lbl, -voted_party_cd, -pct_label, -voted_county_id, -vtd_label)
 
+# remove duplicates in hist_small
 hist_small_not_dup =  hist_small[!duplicated(hist_small$ncid),]
 
-library(stringr)
-library(stringi)
-
-# process median income data
+# process 2018 median income data
 median_inc_county = read.csv("median_household_incomes_NC.csv") %>%
   mutate(county = str_replace(county, " County", "")) %>%
   mutate(county = toupper(county))
 
+# merge 3 datasets
 voter_hist = merge(voter_small, hist_small_not_dup, by = "ncid", all.x = TRUE)
 
 voter_hist_county = merge(voter_hist, median_inc_county, by.x = "county_desc.x", by.y = "county", all.x = TRUE)
@@ -53,27 +54,6 @@ voter_hist_county = merge(voter_hist, median_inc_county, by.x = "county_desc.x",
 voter_hist_filtered = voter_hist_county
 #rm(voter_small, hist_small)
 ```
-
-
-
-
-
-
-# Filter for 2016 election and age
-
-## How many older than 116?
-
-<!-- # ```{r} -->
-<!-- # nrow(voter_hist %>% filter(birth_age > 116)) -->
-<!-- # ``` -->
-
-# Filter
-
-<!-- # ```{r} -->
-<!-- # voter_hist_filtered <- voter_hist %>% -->
-<!-- #   filter(election_desc != "11/06/2018 GENERAL", -->
-<!-- #          birth_age <= 116) # oldest NC resident is 116 years old -->
-<!-- # ``` -->
 
 # Fix missing cong_dist_abbrv
 
@@ -156,7 +136,6 @@ voter_hist_districts <- voter_hist_districts %>%
          county_id = county_id.x)
 ```
 
-
 # create response column
 
 ```{r}
@@ -172,8 +151,6 @@ voter_hist_districts_resp = voter_hist_districts %>%
 # Write to rds
 
 ```{r}
-
-
 saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
 ```
 
@@ -201,7 +178,7 @@ prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hi
 
 # sample JAGS code (for structure)
 
-```{r}
+```{r, eval=F}
 # NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
 # model.matrix(formula)
 
