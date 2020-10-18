@@ -152,6 +152,7 @@ voter_hist_districts_resp = voter_hist_districts %>%
 
 ```{r}
 saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
+
 ```
 
 # eda
@@ -174,6 +175,19 @@ voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000000)
 
 formula = vote_or_not ~ party_cd + race_code + gender_code + birth_age + cong_dist_abbrv 
 prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
+```
+
+# checking accuracy for the simple glm model
+```{r}
+# ideally should use test dataset for predict()
+prelim_logit_model.probs <- predict(prelim_logit_model, voter_hist_districts_resp_small, type = "response")
+prelim_logit_model.pred <- rep("0", nrow(voter_hist_districts_resp_small))
+prelim_logit_model.pred[prelim_logit_model.probs > 0.5] <- 1 # if prob > 0.5, predicted vote_or_not is 1
+
+conf.matrix <- table(prelim_logit_model.pred, voter_hist_districts_resp_small$vote_or_not)
+conf.matrix
+
+sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
 ```
 
 # sample JAGS code (for structure)
