@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(tidyverse)
+library(stringr)
+library(stringi)
 ```
 
 # Read and merge
@@ -21,35 +23,26 @@ Copied from who_votes_eda.Rmd.
 
 ```{r}
 voter_small = readRDS("ncvoter_Statewide_small.rds") %>%
-  mutate(voter_reg_num = str_remove(voter_reg_num, "^0+")) 
-  
-voter_small$voter_reg_num[which(voter_small$voter_reg_num=="")] <- 0
-
-voter_small = voter_small %>%
-  mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
+  filter(birth_age <= 116) %>%
+  dplyr::select(-birth_year, -status_cd, -reason_cd)
 
 hist_small = readRDS("ncvhis_Statewide_small.rds") %>%
-  mutate(unique_id = paste(county_desc, voter_reg_num, sep = "_"))
+  filter(election_desc == "11/08/2016 GENERAL") %>%
+  dplyr::select(-election_lbl, -voted_party_cd, -pct_label, -voted_county_id, -vtd_label)
 
-voter_small[which(voter_small$voter_reg_num=="")] <- 0
-voter_hist = merge(voter_small, hist_small, by = "unique_id", all.y = TRUE)
-rm(voter_small, hist_small)
-```
+hist_small_not_dup =  hist_small[!duplicated(hist_small$ncid),]
 
-# Filter for 2016 election and age
+# process median income data
+median_inc_county = read.csv("median_household_incomes_NC.csv") %>%
+  mutate(county = str_replace(county, " County", "")) %>%
+  mutate(county = toupper(county))
 
-## How many older than 116?
+voter_hist = merge(voter_small, hist_small_not_dup, by = "ncid", all.x = TRUE)
 
-```{r}
-nrow(voter_hist %>% filter(birth_age > 116))
-```
+voter_hist_county = merge(voter_hist, median_inc_county, by.x = "county_desc.x", by.y = "county", all.x = TRUE)
 
-# Filter
-
-```{r}
-voter_hist_filtered <- voter_hist %>% 
-  filter(election_desc == "11/08/2016 GENERAL", 
-         birth_age <= 116) # oldest NC resident is 116 years old
+voter_hist_filtered = voter_hist_county
+#rm(voter_small, hist_small)
 ```
 
 # Fix missing cong_dist_abbrv
@@ -133,30 +126,124 @@ voter_hist_districts <- voter_hist_districts %>%
          county_id = county_id.x)
 ```
 
+
+# create response column
+
+```{r}
+voter_hist_districts_resp = voter_hist_districts %>%
+  mutate(vote_or_not = case_when(
+    is.na(election_desc) ~ 0,
+    TRUE ~ 1
+  )) %>%
+  mutate(med_household_income = scale(med_household_income, center= TRUE, scale = TRUE)) %>% select(-county_id, -zip_code, -drivers_lic, -vtd_description, -election_desc)
+  
+```
+
 # Write to rds
 
 ```{r}
-saveRDS(voter_hist_districts, "filtered_ncvoterhis.rds")
+saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
+
 ```
+
+# eda
 
 ```{r}
-library(mice)
-tempData <- mice(voter_hist_districts, m=5, maxit=10, meth='pmm', seed=500)
+density_age_party <- ggplot(merge_small_samp, aes(birth_age,color=voted_party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
+stacked_race_party <- ggplot(merge_small_samp, aes(race_code,fill=voted_party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+stacked_county_party <- ggplot(merge_small_samp, aes(county_id.x,fill=voted_party_cd)) + labs(y="Density", x = "County", title = "County v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+stacked_county_race <- ggplot(merge_small_samp, aes(county_id.x,fill=race_code)) + labs(y="Density", x = "County", title = "County v. Race", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+stacked_state_race <- ggplot(merge_small_samp, aes(birth_state,fill=race_code)) + labs(y="Density", x = "Birth State", title = "Birth State v. Race", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
 ```
+
+# build simple glm model
 
 ```{r}
-completedData1 <- complete(tempData,1)
-saveRDS(completedData1, "imp1_filtered_ncvoterhis.rds")
+voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds") 
 
-completedData2 <- complete(tempData,2)
-saveRDS(completedData2, "imp2_filtered_ncvoterhis.rds")
+voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000000) 
 
-completedData3 <- complete(tempData,3)
-saveRDS(completedData3, "imp3_filtered_ncvoterhis.rds")
-
-completedData4 <- complete(tempData,4)
-saveRDS(completedData4, "imp4_filtered_ncvoterhis.rds")
-
-completedData5 <- complete(tempData,5)
-saveRDS(completedData5, "imp5_filtered_ncvoterhis.rds")
+formula = vote_or_not ~ party_cd + race_code + gender_code + birth_age + cong_dist_abbrv 
+prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
 ```
+
+# checking accuracy for the simple glm model
+```{r}
+# ideally should use test dataset for predict()
+prelim_logit_model.probs <- predict(prelim_logit_model, voter_hist_districts_resp_small, type = "response")
+prelim_logit_model.pred <- rep("0", nrow(voter_hist_districts_resp_small))
+prelim_logit_model.pred[prelim_logit_model.probs > 0.5] <- 1 # if prob > 0.5, predicted vote_or_not is 1
+
+conf.matrix <- table(prelim_logit_model.pred, voter_hist_districts_resp_small$vote_or_not)
+conf.matrix
+
+sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
+```
+
+# sample JAGS code (for structure)
+
+```{r}
+# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
+# model.matrix(formula)
+
+
+voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000000) 
+
+formula = vote_or_not ~ party_cd + race_code + gender_code + birth_age + cong_dist_abbrv 
+prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
+```
+
+# sample JAGS code (for structure)
+
+```{r, eval=F}
+# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
+# model.matrix(formula)
+
+# THIS IS SAMPLE STRUCTURE CODE FROM GELMAN AND HILL
+model <- function() {
+  # fixed effects 
+  for (i in 1:n) {
+    y[i] ~ dnorm (y.hat[i], tau.y)
+    y.hat[i] <- a[county[i]] + b*x[i] 
+  }
+  
+  b ~ dnorm (0, .0001) 
+  tau.y <- pow(sigma.y, -2) 
+  sigma.y ~ dunif (0, 100) 
+  
+  # random effects
+  for (j in 1:J){
+    a[j] ~ dnorm (mu.a, tau.a) 
+  }
+  
+  mu.a ~ dnorm (0, .0001) 
+  tau.a <- pow(sigma.a, -2) 
+  sigma.a ~ dunif (0, 100)
+}
+```
+
+
+
+
+<!-- # ```{r} -->
+<!-- # library(mice) -->
+<!-- # tempData <- mice(voter_hist_districts, m=5, maxit=10, meth='pmm', seed=500) -->
+<!-- # ``` -->
+
+<!-- # ```{r} -->
+<!-- # completedData1 <- complete(tempData,1) -->
+<!-- # saveRDS(completedData1, "imp1_filtered_ncvoterhis.rds") -->
+<!-- #  -->
+<!-- # completedData2 <- complete(tempData,2) -->
+<!-- # saveRDS(completedData2, "imp2_filtered_ncvoterhis.rds") -->
+<!-- #  -->
+<!-- # completedData3 <- complete(tempData,3) -->
+<!-- # saveRDS(completedData3, "imp3_filtered_ncvoterhis.rds") -->
+<!-- #  -->
+<!-- # completedData4 <- complete(tempData,4) -->
+<!-- # saveRDS(completedData4, "imp4_filtered_ncvoterhis.rds") -->
+<!-- #  -->
+<!-- # completedData5 <- complete(tempData,5) -->
+<!-- # saveRDS(completedData5, "imp5_filtered_ncvoterhis.rds") -->
+<!-- # ``` -->
