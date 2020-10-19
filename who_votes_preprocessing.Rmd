@@ -126,7 +126,6 @@ voter_hist_districts <- voter_hist_districts %>%
          county_id = county_id.x)
 ```
 
-
 # create response column
 
 ```{r}
@@ -223,6 +222,44 @@ model <- function() {
 }
 ```
 
+=======
+
+conf.matrix <- table(prelim_logit_model.pred, voter_hist_districts_resp_small$vote_or_not)
+conf.matrix
+
+sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
+```
+
+# sample JAGS code (for structure)
+
+```{r, eval=F}
+# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
+# model.matrix(formula)
+
+# THIS IS SAMPLE STRUCTURE CODE FROM GELMAN AND HILL
+model <- function() {
+  # fixed effects 
+  for (i in 1:n) {
+    y[i] ~ dnorm (y.hat[i], tau.y)
+    y.hat[i] <- a[county[i]] + b*x[i] 
+  }
+  
+  b ~ dnorm (0, .0001) 
+  tau.y <- pow(sigma.y, -2) 
+  sigma.y ~ dunif (0, 100) 
+  
+  # random effects
+  for (j in 1:J){
+    a[j] ~ dnorm (mu.a, tau.a) 
+  }
+  
+  mu.a ~ dnorm (0, .0001) 
+  tau.a <- pow(sigma.a, -2) 
+  sigma.a ~ dunif (0, 100)
+}
+```
+
+>>>>>>> bf21378a6a2cf9f4e20545754a2cece346084434
 
 
 
