@@ -15,6 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(stringr)
 library(stringi)
+library(rjags)
+library(R2jags)
 ```
 
 # Read and merge
@@ -119,7 +121,7 @@ voter_hist_districts <- voter_hist_districts %>%
 
 # Remove duplicate columns from merging
 
-```{r}
+```{r, eval = F}
 voter_hist_districts <- voter_hist_districts %>% 
   select(-c("county_desc.y", "county_id.y", "voter_reg_num.x", "voter_reg_num.y")) %>% 
   rename(county_desc = county_desc.x, 
@@ -141,8 +143,13 @@ voter_hist_districts_resp = voter_hist_districts %>%
 # Write to rds
 
 ```{r}
+# ask amy about reproducibility
 saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
+```
 
+# IMPORT rds
+```{r}
+voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
 
 # eda
@@ -159,15 +166,16 @@ box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_b
 # build simple glm model
 
 ```{r}
-voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds") 
+#voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds") 
 
-voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000000) 
+voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 100000)
 
 formula = vote_or_not ~ party_cd + race_code + gender_code + birth_age + cong_dist_abbrv 
 prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
 ```
 
 # checking accuracy for the simple glm model
+
 ```{r}
 # ideally should use test dataset for predict()
 prelim_logit_model.probs <- predict(prelim_logit_model, voter_hist_districts_resp_small, type = "response")
@@ -180,40 +188,105 @@ conf.matrix
 sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
 ```
 
-# sample JAGS code (for structure)
+# test-train split
 
 ```{r}
-# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
-# model.matrix(formula)
+# THIS IS FOR DEBUGGING PURPOSES ONE SPLIT
+## 75% of the sample size
+smp_size <- floor(0.80 * nrow(voter_hist_districts_resp_small))
 
+## set the seed to make your partition reproducible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(voter_hist_districts_resp_small)), size = smp_size)
 
-voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000000) 
+train <- voter_hist_districts_resp_small[train_ind, ]
+test <- voter_hist_districts_resp_small[-train_ind, ]
 
-formula = vote_or_not ~ party_cd + race_code + gender_code + birth_age + cong_dist_abbrv 
-prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
+# WHEN WE DO K FOLD AND HAVE K SPLIT
+# cat_col is what we want even distributions of
+# parts <- partition(AllPreprocessed_wf_hrv_df, p = 0.2,  cat_col = 'Person')
+# test_set <- parts[parts$.partitions == 1,]
+# train_set <- parts[parts$.partitions == 2,]
+# train_set <- fold(train_set, k = 5, cat_col = 'Person')
+# train_set <- train_set %>% arrange(.folds)
 ```
+
 
 # sample JAGS code (for structure)
 
 ```{r, eval=F}
-# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
-# model.matrix(formula)
+# glmer(vote_or_no ~ some variables here +(1|county_desc), family = "binomial")
 
+# random intercept: county_desc 
+# main effect: median_household_income, gender_code, race_code, ethnic_code, birth_age, party_cd
+
+# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
+
+formula = vote_or_not ~  med_household_income+gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd
+X = model.matrix(formula, data = train)
+
+#saveRDS(X, "model_matrix_all_demographics_gpartyinter.rds")
+
+x_inc = X[,"med_household_income"]
+x_genderM = X[, "gender_codeM"]
+x_genderU = X[, "gender_codeU"]
+x_raceB = X[, "race_codeB"]
+x_raceI = X[, "race_codeI"]
+x_raceM = X[, "race_codeM"]
+x_raceO = X[, "race_codeO"]
+x_raceU = X[, "race_codeU"]
+x_raceW = X[, "race_codeW"]
+
+
+
+# mapping between name county aka Alamance and like county #1 (index in a array)
+no_unique_counties = n_distinct(train$county_desc)
+alphabetized_counties = sort(unique(train$county_desc))  
+
+# nx1
+county = match(train$county_desc, alphabetized_counties)
+```
+
+```{r}
 # THIS IS SAMPLE STRUCTURE CODE FROM GELMAN AND HILL
-model <- function() {
+# X[i, ] %*% beta
+
+#xtest = X[, "med_household_income"]
+
+
+
+model1 <- function() {
   # fixed effects 
   for (i in 1:n) {
-    y[i] ~ dnorm (y.hat[i], tau.y)
-    y.hat[i] <- a[county[i]] + b*x[i] 
+    y[i] ~ dbin(theta[i], 1)
+    theta[i] <- ilogit(a[county[i]] + b1*x_inc[i] + b2*x_genderM[i] + b3*x_genderU[i] + b4*x_raceB[i] + b5*x_raceI[i] + b6*x_raceM[i] +b7*x_raceO[i] +b8*x_raceU[i] +b9*x_raceW[i]
+                        
+                      #   b1*X[i, "med_household_income"] + b2*X[i, "gender_codeM"] + b3*X[i, "gender_codeU"] + b4*X[i, "race_codeB"] + b5*X[i, "race_codeI"] + b6*X[i, "race_codeM"]
+                      # + b7*X[i, "race_codeO"] + b8*X[i,"race_codeU"] + b9*X[i, "race_codeW"] 
+                      # + b10*X[i, "birth_age"] + b11*X[i, "party_cdGRE"] + b12*X[i, "party_cdLIB"] + b13*X[i, "party_cdREP"] + b14*X[i, "party_cdUNA"]
+                      )
+    
+
   }
   
-  b ~ dnorm (0, .0001) 
-  tau.y <- pow(sigma.y, -2) 
-  sigma.y ~ dunif (0, 100) 
+  b1 ~ dnorm (0, .0001) 
+  b2 ~ dnorm (0, .0001) 
+  b3 ~ dnorm (0, .0001) 
+  b4 ~ dnorm (0, .0001) 
+  b5 ~ dnorm (0, .0001) 
+  b6 ~ dnorm (0, .0001) 
+  b7 ~ dnorm (0, .0001) 
+  b8 ~ dnorm (0, .0001) 
+  b9 ~ dnorm (0, .0001) 
+  b10 ~ dnorm (0, .0001) 
+  b11 ~ dnorm (0, .0001) 
+  b12 ~ dnorm (0, .0001) 
+  b13 ~ dnorm (0, .0001) 
+  b14 ~ dnorm (0, .0001) 
   
   # random effects
   for (j in 1:J){
-    a[j] ~ dnorm (mu.a, tau.a) 
+    a[j] ~ dnorm(mu.a, tau.a) 
   }
   
   mu.a ~ dnorm (0, .0001) 
@@ -222,45 +295,20 @@ model <- function() {
 }
 ```
 
-=======
+```{r}
+n = nrow(train)
+y = train$vote_or_not
 
-conf.matrix <- table(prelim_logit_model.pred, voter_hist_districts_resp_small$vote_or_not)
-conf.matrix
-
-sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
+data_build_model = list(n=n, county = county, x_inc = x_inc, x_genderM = x_genderM, x_genderU = x_genderU, x_raceB = x_raceB, x_raceI = x_raceI, x_raceM = x_raceM, x_raceO = x_raceO, x_raceW = x_raceW, x_raceU = x_raceU, J = no_unique_counties, y=y)
+params_to_output = c("a", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "theta", "y", "mu.a", "tau.a", "sigma.a")
+model_output <- jags(data = data_build_model,
+                     parameters.to.save = params_to_output,
+                     n.iter = 10000,
+                     n.chains = 2,
+                     model.file = model1)
+#lapply(1:9, function(x) {paste0("b",x)})
+model_output
 ```
-
-# sample JAGS code (for structure)
-
-```{r, eval=F}
-# NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
-# model.matrix(formula)
-
-# THIS IS SAMPLE STRUCTURE CODE FROM GELMAN AND HILL
-model <- function() {
-  # fixed effects 
-  for (i in 1:n) {
-    y[i] ~ dnorm (y.hat[i], tau.y)
-    y.hat[i] <- a[county[i]] + b*x[i] 
-  }
-  
-  b ~ dnorm (0, .0001) 
-  tau.y <- pow(sigma.y, -2) 
-  sigma.y ~ dunif (0, 100) 
-  
-  # random effects
-  for (j in 1:J){
-    a[j] ~ dnorm (mu.a, tau.a) 
-  }
-  
-  mu.a ~ dnorm (0, .0001) 
-  tau.a <- pow(sigma.a, -2) 
-  sigma.a ~ dunif (0, 100)
-}
-```
-
->>>>>>> bf21378a6a2cf9f4e20545754a2cece346084434
-
 
 
 <!-- # ```{r} -->
