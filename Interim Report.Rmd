@@ -39,13 +39,26 @@ Interim report: who votes in NC? Using the NC voter files, identify who votes in
 
 ### Context: Why Is Voter Turnout Prediction Important
 
-### Forward: Using this report to predict outcomes of NC congressional elections
+We are getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the Congressional Election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, 
 
 ## Data Description
 
 ### Where the data comes from
 
 ### Data Cleanup and Variable Transformation
+
+## Method
+
+### Variable Selection
+
+Why we selected gender, race, party to be significant, among others (from Uhlaner):
+\newline
+We focus on race, ethnicity, and gender as they are important categories in contemporary U.S. politics. Our study thus adds to the minority empowerment literature. But treating these categories separately misses a crucial point: they intersect, and that intersectionality matters. White women have different experiences than Latinas; African American men have different experiences than African American women. In this article, we assess whether being collectively descriptively represented affects turnout by looking at seven elections, the presidential races of 2000, 2004, 2008, and 2012, and the off-year elections of 2002, 2006, and 2010 to assess the intersectional impact of collective descriptive representation on voter participation.
+There are well-established results on the participation of people of different gender, ethnicity, and race. Overall, historically white males had the highest voting rates in the United States, but the gender edge evaporated in the 1980s while racial and ethnic dif- ferences have narrowed, but remain. The turnout rates for men and women became essentially equal in 1980 and 1982, and ever since they have been higher for women (Center for American Women and Politics 2011).4 Note, however, that for most politi- cal activities other than voting, men still outpace women (Conway, Steuernagel, and Ahern 2005, 94–97; Verba, Schlozman, and Brady 1995, 254–57). African Americans also, historically, participated less than other Americans. That gap has been decreas- ing, reflecting the Civil Rights movement and other changes, until by 1990 the African American turnout rate was close to that of whites. Obama’s candidacy and presidency has further mobilized African American voting; in 2008, turnout of African Americans was just 1.4 points below that of non-Hispanic whites and moved 2 points higher in 2012 (File 2013, 3).5 Latinos vote at lower rates than either African Americans or whites, even when the comparison is, appropriately, limited to citizens. 
+\newline
+Charles on employment, wage and voter turnout: why we selected median income to be significant
+\newline
+Using county-level data that we have assembled for elections between 1969 and 2000, and employing a variety of OLS and TSLS models, we find that increases in local per capita earnings and log employment per adult reduce voter turnout in gubernatorial, congressional, senatorial and state legislative elections, but have no statistically significant effect on turnout in presidential contests. 
 
 # Appendix
 ## References
@@ -69,4 +82,5 @@ Interim report: who votes in NC? Using the NC voter files, identify who votes in
 9. Weinschenk, A. C. (2019) That’s Why the Lady Lost to the Trump: Demographics and the 2016 Presidential Election, Journal of Political Marketing, 18:1-2, 69-91, DOI: 10.1080/15377857.2018.1478657
 \newline
 10. Charles, K. K., &amp; Stephens, M. (2011). Employment, Wages and Voter Turnout. doi:10.3386/w17270
-
+\newline
+11. Hills, M. (2020, September 25). US election 2020: A really simple guide. Retrieved October 20, 2020, from https://www.bbc.com/news/election-us-2020-53785985
