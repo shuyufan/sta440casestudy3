@@ -140,10 +140,30 @@ voter_hist_districts_resp = voter_hist_districts %>%
   
 ```
 
+```{r}
+voter_hist_districts_resp = voter_hist_districts_resp %>%
+  mutate(party_cd = as.character(party_cd)) %>%
+  mutate(party_cd = case_when(
+    party_cd == "DEM" ~ "DEM",
+    party_cd == "REP" ~ "REP",
+    TRUE ~ "Other"
+  )) %>%
+  mutate(race_code = case_when(
+    race_code == "W" ~ "White",
+    race_code == "B" ~ "Black",
+    TRUE ~ "Other"
+  ))  %>%
+  mutate(birth_age = scale(birth_age, center = TRUE, scale = TRUE))
+
+voter_hist_districts_resp$gender_code = ifelse(voter_hist_districts_resp$gender_code==" ", "U", as.character(voter_hist_districts_resp$gender_code))
+voter_hist_districts_resp$race_code = relevel(as.factor(voter_hist_districts_resp$race_code), ref = "White")
+
+
+```
+
 # Write to rds
 
 ```{r}
-# ask amy about reproducibility
 saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
 ```
 
@@ -151,6 +171,9 @@ saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
 ```{r}
 voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
+
+
+
 
 # eda
 
@@ -168,10 +191,10 @@ box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_b
 ```{r}
 #voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds") 
 
-voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 100000)
+voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000)
 
-formula = vote_or_not ~ party_cd + race_code + gender_code + birth_age + cong_dist_abbrv 
-prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
+# formula = vote_or_not ~ med_household_income + gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd + race_code*party_cd + gender_code*birth_age
+# prelim_logit_model = glm(formula = formula, family = "binomial", data = voter_hist_districts_resp_small)
 ```
 
 # checking accuracy for the simple glm model
@@ -211,6 +234,27 @@ test <- voter_hist_districts_resp_small[-train_ind, ]
 # train_set <- train_set %>% arrange(.folds)
 ```
 
+# sample freq model
+```{r}
+library(lme4)
+
+train = train %>%
+  mutate(birth_age = scale(birth_age, center = TRUE, scale = TRUE))
+
+formula = vote_or_not ~ med_household_income + gender_code + race_code + birth_age + party_cd + (1|county_desc) + gender_code*party_cd + race_code*party_cd 
+freq_logit_model = glmer(formula = formula, data = train, family = "binomial")
+```
+
+```{r}
+test_freq_logit_model.probs <- predict(prelim_logit_model, voter_hist_districts_resp_small, type = "response")
+prelim_logit_model.pred <- rep("0", nrow(voter_hist_districts_resp_small))
+prelim_logit_model.pred[prelim_logit_model.probs > 0.5] <- 1 # if prob > 0.5, predicted vote_or_not is 1
+
+conf.matrix <- table(prelim_logit_model.pred, voter_hist_districts_resp_small$vote_or_not)
+conf.matrix
+
+sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
+```
 
 # sample JAGS code (for structure)
 
@@ -222,7 +266,9 @@ test <- voter_hist_districts_resp_small[-train_ind, ]
 
 # NEED TO USE MODEL.MATRIX or some other code to make data into design matrix (expand dummies and deal with interactions and stuff)
 
-formula = vote_or_not ~  med_household_income+gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd
+
+
+formula = vote_or_not ~ med_household_income + gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd + race_code*party_cd #+ gender_code*birth_age
 X = model.matrix(formula, data = train)
 
 #saveRDS(X, "model_matrix_all_demographics_gpartyinter.rds")
@@ -230,12 +276,20 @@ X = model.matrix(formula, data = train)
 x_inc = X[,"med_household_income"]
 x_genderM = X[, "gender_codeM"]
 x_genderU = X[, "gender_codeU"]
-x_raceB = X[, "race_codeB"]
-x_raceI = X[, "race_codeI"]
-x_raceM = X[, "race_codeM"]
-x_raceO = X[, "race_codeO"]
-x_raceU = X[, "race_codeU"]
-x_raceW = X[, "race_codeW"]
+x_raceB = X[, "race_codeBlack"]
+x_raceO = X[, "race_codeOther"]
+x_age = X[,"birth_age"]
+x_partyO = X[,"party_cdOther"]
+x_partyR = X[,"party_cdREP"]
+x_genderM_partyO = X[,"gender_codeM:party_cdOther"]
+x_genderU_partyO = X[,"gender_codeU:party_cdOther"]
+x_genderM_partyR = X[,"gender_codeM:party_cdREP"]
+x_genderU_partyR = X[,"gender_codeU:party_cdREP"]
+x_raceB_partyO = X[,"race_codeBlack:party_cdOther"]
+x_raceO_partyO = X[,"race_codeOther:party_cdOther"]
+x_raceB_partyR = X[,"race_codeBlack:party_cdREP"]
+x_raceO_partyR = X[,"race_codeOther:party_cdREP"]
+
 
 
 
@@ -259,14 +313,7 @@ model1 <- function() {
   # fixed effects 
   for (i in 1:n) {
     y[i] ~ dbin(theta[i], 1)
-    theta[i] <- ilogit(a[county[i]] + b1*x_inc[i] + b2*x_genderM[i] + b3*x_genderU[i] + b4*x_raceB[i] + b5*x_raceI[i] + b6*x_raceM[i] +b7*x_raceO[i] +b8*x_raceU[i] +b9*x_raceW[i]
-                        
-                      #   b1*X[i, "med_household_income"] + b2*X[i, "gender_codeM"] + b3*X[i, "gender_codeU"] + b4*X[i, "race_codeB"] + b5*X[i, "race_codeI"] + b6*X[i, "race_codeM"]
-                      # + b7*X[i, "race_codeO"] + b8*X[i,"race_codeU"] + b9*X[i, "race_codeW"] 
-                      # + b10*X[i, "birth_age"] + b11*X[i, "party_cdGRE"] + b12*X[i, "party_cdLIB"] + b13*X[i, "party_cdREP"] + b14*X[i, "party_cdUNA"]
-                      )
-    
-
+    theta[i] <- ilogit(a[county[i]] + b1*x_inc[i] + b2*x_genderM[i] + b3*x_genderU[i] + b4*x_raceB[i] + b5*x_raceO[i] + b6*x_age[i] + b7*x_partyO[i] + b8*x_partyR[i] + b9*x_genderM_partyO[i] + b10*x_genderU_partyO[i]+b11*x_genderM_partyR[i] + b12*x_genderU_partyR[i] +b13*x_raceB_partyO[i] + b14*x_raceO_partyO[i] + b15*x_raceB_partyR[i] + b16*x_raceO_partyR[i])
   }
   
   b1 ~ dnorm (0, .0001) 
@@ -283,7 +330,9 @@ model1 <- function() {
   b12 ~ dnorm (0, .0001) 
   b13 ~ dnorm (0, .0001) 
   b14 ~ dnorm (0, .0001) 
-  
+  b15 ~ dnorm (0, .0001) 
+  b16 ~ dnorm (0, .0001) 
+
   # random effects
   for (j in 1:J){
     a[j] ~ dnorm(mu.a, tau.a) 
@@ -292,6 +341,45 @@ model1 <- function() {
   mu.a ~ dnorm (0, .0001) 
   tau.a <- pow(sigma.a, -2) 
   sigma.a ~ dunif (0, 100)
+  
+  
+      
+  predictive_M_B_DEM = a[80] + b2 + b4 
+  predictive_M_B_REP = a[80] + b2 + b4 + b8 + b11 + b15
+  predictive_M_B_Oth = a[80] + b2 + b4 + b7 + b9 + b13
+  
+  predictive_M_W_DEM = a[80] + b2
+  predictive_M_W_REP = a[80] + b2 + b8 + b11 
+  predictive_M_W_Oth = a[80] + b2 + b7 + b9
+  
+  predictive_M_Oth_DEM = a[80] + b2 + b5
+  predictive_M_Oth_REP = a[80] + b2 + b5 + b8 + b11 + b16
+  predictive_M_Oth_Oth = a[80] + b2 + b5 + b7 + b9 + b14
+  
+  predictive_F_B_DEM = a[80] + b4
+  predictive_F_B_REP = a[80] + b4 + b8 + b15
+  predictive_F_B_Oth = a[80] + b4 + b7 + b13
+  
+  predictive_F_W_DEM = a[80] # 80 is WAKE county--most populous
+  predictive_F_W_REP = a[80] + b8
+  predictive_F_W_Oth = a[80] + b7
+  
+  predictive_F_Oth_DEM = a[80] + b5 
+  predictive_F_Oth_REP = a[80] + b5 + b8 + b16
+  predictive_F_Oth_Oth = a[80] + b5 + b7 + b14
+  
+  predictive_U_B_DEM = a[80] + b3 + b4 
+  predictive_U_B_REP = a[80] + b3 + b4 + b8 + b12 + b15
+  predictive_U_B_Oth = a[80] + b3 + b4 + b7 + b10 + b13
+  
+  predictive_U_W_DEM = a[80] + b3 
+  predictive_U_W_REP = a[80] + b3 + b8 + b12
+  predictive_U_W_Oth = a[80] + b3 + b7 + b10 
+  
+  predictive_U_Oth_DEM = a[80] + b3 + b5 
+  predictive_U_Oth_REP = a[80] + b3 + b5 + b8 + b12 + b16
+  predictive_U_Oth_Oth = a[80] + b3 + b5 + b7 + b10 + b14
+
 }
 ```
 
@@ -299,31 +387,156 @@ model1 <- function() {
 n = nrow(train)
 y = train$vote_or_not
 
-data_build_model = list(n=n, county = county, x_inc = x_inc, x_genderM = x_genderM, x_genderU = x_genderU, x_raceB = x_raceB, x_raceI = x_raceI, x_raceM = x_raceM, x_raceO = x_raceO, x_raceW = x_raceW, x_raceU = x_raceU, J = no_unique_counties, y=y)
-params_to_output = c("a", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "theta", "y", "mu.a", "tau.a", "sigma.a")
+data_build_model = list(n=n, county = county, x_inc = x_inc, x_age = x_age, x_genderM = x_genderM, x_genderU = x_genderU, x_raceB = x_raceB, x_raceO = x_raceO, x_partyO = x_partyO, x_partyR = x_partyR, x_genderM_partyO = x_genderM_partyO, x_genderU_partyO = x_genderU_partyO, x_genderM_partyR = x_genderM_partyR, x_genderU_partyR = x_genderU_partyR, x_raceB_partyO = x_raceB_partyO,  x_raceO_partyO = x_raceO_partyO, x_raceB_partyR = x_raceB_partyR, x_raceO_partyR = x_raceO_partyR, J = no_unique_counties, y=y)
+
+params_to_output = c("a", "b1", "b2", "b3", "b4", "b5", "b6", "b7", "b8", "b9", "b10", "b11", "b12", "b13", "b14", "b15", "b16", "theta", "y", "mu.a", "tau.a", "sigma.a",
+  "predictive_M_B_DEM", 
+  "predictive_M_B_REP", 
+  "predictive_M_B_Oth", 
+  
+  "predictive_M_W_DEM", 
+  "predictive_M_W_REP", 
+  "predictive_M_W_Oth", 
+  
+  "predictive_M_Oth_DEM", 
+  "predictive_M_Oth_REP", 
+  "predictive_M_Oth_Oth", 
+  
+  "predictive_F_B_DEM", 
+  "predictive_F_B_REP", 
+  "predictive_F_B_Oth", 
+  
+  "predictive_F_W_DEM", 
+  "predictive_F_W_REP", 
+  "predictive_F_W_Oth", 
+  
+  "predictive_F_Oth_DEM", 
+  "predictive_F_Oth_REP", 
+  "predictive_F_Oth_Oth", 
+  
+  "predictive_U_B_DEM", 
+  "predictive_U_B_REP", 
+  "predictive_U_B_Oth", 
+  
+  "predictive_U_W_DEM", 
+  "predictive_U_W_REP", 
+  "predictive_U_W_Oth", 
+  
+  "predictive_U_Oth_DEM", 
+  "predictive_U_Oth_REP", 
+  "predictive_U_Oth_Oth"
+)
 model_output <- jags(data = data_build_model,
                      parameters.to.save = params_to_output,
-                     n.iter = 10000,
+                     n.iter = 1000,
                      n.chains = 2,
                      model.file = model1)
-#lapply(1:9, function(x) {paste0("b",x)})
 model_output
+saveRDS(model_output, "model_output_preds_n1000_iter1000")
 ```
+
+# brm stuff that doesnt work bc amy made us do it
 
 ```{r}
-library(brms)
-binary_model <- brm(formula = vote_or_not ~  med_household_income+gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd + (1|county_desc),  
-                   data=train, 
-                   family = bernoulli(link = "logit"),
-                   warmup = 0, 
-                   iter = 10, 
-                   chains = 2, 
-                   inits= "0", 
-                   cores= 2,
-                   seed = 123)
-binary_model
+# library(brms)
+# binary_model <- brm(formula = vote_or_not ~  med_household_income+gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd + (1|county_desc),  
+#                    data=train, 
+#                    family = bernoulli(link = "logit"),
+#                    warmup = 0, 
+#                    iter = 10, 
+#                    chains = 2, 
+#                    inits= "0", 
+#                    cores= 2,
+#                    seed = 123)
+# binary_model
 ```
 
+
+# make values for plot
+
+```{r}
+library(boot)
+res = model_output$BUGSoutput$summary
+age_range = seq(-3, 2, 0.1)
+
+  predictive_M_B_DEM = res["a[80]",1] + res["b2",1] + res["b4",1] + res["b6",1]*age_range
+  predictive_M_B_REP = res["a[80]",1] + res["b2",1] + res["b4",1] + res["b8",1] + res["b11",1] + res["b15",1] + res["b6",1]*age_range
+  predictive_M_B_Oth = res["a[80]",1] + res["b2",1] + res["b4",1] + res["b7",1] + res["b9",1] + res["b13",1] + res["b6",1]*age_range
+  
+  predictive_M_W_DEM = res["a[80]",1] + res["b2",1]+ res["b6",1]*age_range
+  predictive_M_W_REP = res["a[80]",1] + res["b2",1] + res["b8",1] + res["b11",1] + res["b6",1]*age_range
+  predictive_M_W_Oth = res["a[80]",1] + res["b2",1] + res["b7",1] + res["b9",1]+ res["b6",1]*age_range
+  
+  predictive_M_Oth_DEM = res["a[80]",1] + res["b2",1] + res["b5",1]+ res["b6",1]*age_range
+  predictive_M_Oth_REP = res["a[80]",1] + res["b2",1] + res["b5",1] + res["b8",1] + res["b11",1] + res["b16",1]+ res["b6",1]*age_range
+  predictive_M_Oth_Oth = res["a[80]",1] + res["b2",1] + res["b5",1] + res["b7",1] + res["b9",1] + res["b14",1]+ res["b6",1]*age_range
+  
+  predictive_F_B_DEM = res["a[80]",1] + res["b4",1]+ res["b6",1]*age_range
+  predictive_F_B_REP = res["a[80]",1] + res["b4",1] + res["b8",1] + res["b15",1]+ res["b6",1]*age_range
+  predictive_F_B_Oth = res["a[80]",1] + res["b4",1] + res["b7",1] + res["b13",1]+ res["b6",1]*age_range
+  
+  predictive_F_W_DEM = res["a[80]",1] + res["b6",1]*age_range# 80 is WAKE county--most populous
+  predictive_F_W_REP = res["a[80]",1] + res["b8",1]+ res["b6",1]*age_range
+  predictive_F_W_Oth = res["a[80]",1] + res["b7",1]+ res["b6",1]*age_range
+  
+  predictive_F_Oth_DEM = res["a[80]",1] + res["b5",1] + res["b6",1]*age_range
+  predictive_F_Oth_REP = res["a[80]",1] + res["b5",1] + res["b8",1] + res["b16",1]+ res["b6",1]*age_range
+  predictive_F_Oth_Oth = res["a[80]",1] + res["b5",1] + res["b7",1] + res["b14",1]+ res["b6",1]*age_range
+  
+  predictive_U_B_DEM = res["a[80]",1] + res["b3",1] + res["b4",1] + res["b6",1]*age_range
+  predictive_U_B_REP = res["a[80]",1] + res["b3",1] + res["b4",1] + res["b8",1] + res["b12",1] + res["b15",1]+ res["b6",1]*age_range
+  predictive_U_B_Oth = res["a[80]",1] + res["b3",1] + res["b4",1] + res["b7",1] + res["b10",1] + res["b13",1]+ res["b6",1]*age_range
+  
+  predictive_U_W_DEM = res["a[80]",1] + res["b3",1] + res["b6",1]*age_range
+  predictive_U_W_REP = res["a[80]",1] + res["b3",1] + res["b8",1] + res["b12",1]+ res["b6",1]*age_range
+  predictive_U_W_Oth = res["a[80]",1] + res["b3",1] + res["b7",1] + res["b10",1] + res["b6",1]*age_range
+  
+  predictive_U_Oth_DEM = res["a[80]",1] + res["b3",1] + res["b5",1] + res["b6",1]*age_range
+  predictive_U_Oth_REP = res["a[80]",1] + res["b3",1] + res["b5",1] + res["b8",1] + res["b12",1] + res["b16",1]+ res["b6",1]*age_range
+  predictive_U_Oth_Oth = res["a[80]",1] + res["b3",1] + res["b5",1] + res["b7",1] + res["b10",1] + res["b14",1]+ res["b6",1]*age_range
+
+pred_df = data.frame( predictive_M_B_DEM, 
+  predictive_M_B_REP, 
+  predictive_M_B_Oth, 
+  
+  predictive_M_W_DEM, 
+  predictive_M_W_REP, 
+  predictive_M_W_Oth, 
+  
+  predictive_M_Oth_DEM, 
+  predictive_M_Oth_REP, 
+  predictive_M_Oth_Oth, 
+  
+  predictive_F_B_DEM, 
+  predictive_F_B_REP, 
+  predictive_F_B_Oth, 
+  
+  predictive_F_W_DEM, 
+  predictive_F_W_REP, 
+  predictive_F_W_Oth, 
+  
+  predictive_F_Oth_DEM, 
+  predictive_F_Oth_REP, 
+  predictive_F_Oth_Oth, 
+  
+  predictive_U_B_DEM, 
+  predictive_U_B_REP, 
+  predictive_U_B_Oth, 
+  
+  predictive_U_W_DEM, 
+  predictive_U_W_REP, 
+  predictive_U_W_Oth, 
+  
+  predictive_U_Oth_DEM, 
+  predictive_U_Oth_REP, 
+  predictive_U_Oth_Oth,
+  age_range
+) %>%
+  gather(., "profile", "values", 1:27) %>%
+  mutate(values = inv.logit(values))
+
+ggplot(pred_df, aes(x = age_range, y = values, group = profile, color = profile)) +geom_density(stat="identity")
+```
 
 <!-- # ```{r} -->
 <!-- # library(mice) -->
