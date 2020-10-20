@@ -1,0 +1,72 @@
+---
+title: "Interim Report: Who Votes in NC?"
+author: "Alexander Bendeck, Lynn Fan, Cathy Lee, Alice Liao, Justina Zou"
+date: "20 October 2020"
+fontsize: 11pt
+output: 
+  pdf_document: 
+  latex_engine: xelatex
+  fig_width: 2
+  fig_height: 1
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include=FALSE}
+library(gtable)
+library(ggplot2)
+library(gridExtra)
+library(rjags)
+library(R2jags)
+library(grid)
+library(xtable)
+library(coda)
+library(bayesplot)
+library(rstanarm)
+library(dplyr)
+library(reshape2)
+library(knitr)
+library(tidyverse)
+library(stringr)
+library(stringi)
+```
+
+## Introduction
+
+Interim report: who votes in NC? Using the NC voter files, identify who votes in NC so that these data can be used in conjunction with surveys and other data in order to predict outcomes of NC congressional elections. Present results in short (<5 min) video presentation on October 23. This report will be peer reviewed.
+
+### Context: Why Is Voter Turnout Prediction Important
+
+### Forward: Using this report to predict outcomes of NC congressional elections
+
+## Data Description
+
+### Where the data comes from
+
+### Data Cleanup and Variable Transformation
+
+# Appendix
+## References
+
+1. Linzer, D. A. (2013). Dynamic Bayesian Forecasting of Presidential Elections in the States. Journal of the American Statistical Association, 108(501), 124-134. doi:10.1080/01621459.2012.737735
+\newline
+2. Hansford, T. G., &amp; Gomez, B. T. (2010). Estimating the Electoral Effects of Voter Turnout. American Political Science Review, 104(2), 268-288. doi:10.1017/s0003055410000109
+\newline
+3. 2020 Election. (2020, October 20). Retrieved October 20, 2020, from https://fivethirtyeight.com/politics/elections/
+\newline
+4. Park, D. K., Gelman, A., &amp; Bafumi, J. (2006). State-Level Opinions from National Surveys:. Public Opinion in State Politics, 209-228. doi:10.2307/j.ctvr33bdg.17
+\newline
+5. Mahler, V. A., Jesuit, D. K., &amp; Paradowski, P. R. (2013). Electoral Turnout and State Redistribution. Political Research Quarterly, 67(2), 361-373. doi:10.1177/1065912913509306
+\newline
+6. Uhlaner, C. J., &amp; Scola, B. (2015). Collective Representation as a Mobilizer. State Politics &amp; Policy Quarterly, 16(2), 227-263. doi:10.1177/1532440015603576
+\newline
+7. Godbout, J. (2012). Turnout and presidential coattails in congressional elections. Public Choice, 157(1-2), 333-356. doi:10.1007/s11127-012-9947-7
+\newline
+8. Kim, S. S., Alvarez, R. M., &amp; Ramirez, C. M. (2020). Who Voted in 2016? Using Fuzzy Forests to Understand Voter Turnout. doi:10.33774/apsa-2020-xzx29
+\newline
+9. Weinschenk, A. C. (2019) That’s Why the Lady Lost to the Trump: Demographics and the 2016 Presidential Election, Journal of Political Marketing, 18:1-2, 69-91, DOI: 10.1080/15377857.2018.1478657
+\newline
+10. Charles, K. K., &amp; Stephens, M. (2011). Employment, Wages and Voter Turnout. doi:10.3386/w17270
+
