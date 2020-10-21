@@ -35,15 +35,19 @@ library(stringi)
 
 ## Introduction
 
-Interim report: who votes in NC? Using the NC voter files, identify who votes in NC so that these data can be used in conjunction with surveys and other data in order to predict outcomes of NC congressional elections. Present results in short (<5 min) video presentation on October 23. This report will be peer reviewed.
 
 ### Context: Why Is Voter Turnout Prediction Important
 
-We are getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the Congressional Election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, 
+The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the Congressional Election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence from political scientists regarding this claim (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both Congressional Elections and Presidential races. For example, gender, race and party registration could help profile voting patterns for Congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
+\newline
+This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.  
+TODO: Why NC? Discuss how NC has been a swing state and has complex demographic composition that will shed light to methodologies helpful to predict other states as well.
 
 ## Data Description
 
 ### Where the data comes from
+
+Why we selected only the year of 2016? Significance of presidential election year, but needs literature review to confirm.
 
 ### Data Cleanup and Variable Transformation
 
