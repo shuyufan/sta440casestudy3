@@ -38,16 +38,20 @@ library(stringi)
 
 ### Context: Why Is Voter Turnout Prediction Important
 
-The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the Congressional Election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence from political scientists regarding this claim (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both Congressional Elections and Presidential races. For example, gender, race and party registration could help profile voting patterns for Congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
+The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the congressional election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence about this theory (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both congressional elections and presidential races. For example, gender, race and party registration could help profile voting patterns for congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
 \newline
-This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.  
-TODO: Why NC? Discuss how NC has been a swing state and has complex demographic composition that will shed light to methodologies helpful to predict other states as well.
+Among all states, North Carolina has been as a swing state in presidential and congressional elections for decades. In 2008, Obama won the state narrowly, but lost it narrowly after 4 years in 2012. Since 1996, the Republican statewide vote share in congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014 (Perrin et al.)." It makes North Carolina an interesting battleground in which voter demographic changes could potentially lead to significant implications of election outcomes and "an excellent site for those interested in partisan voting trends (Perrin et al.)." This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.  
 
 ## Data Description
 
 ### Where the data comes from
 
 Why we selected only the year of 2016? Significance of presidential election year, but needs literature review to confirm.
+
+Things on 2018 in Perrin
+
+While tracking political opinion in purple states is important, the 2018 midterm election was unusual in that there were no statewide races (what local pundits call a “blue moon” election). That is, neither of North Carolina’s U.S. senators nor the governor was up for reelection, so all races on the ballot were relatively local; the largest districts were those for U.S. Congress. Democrats won a narrow victory (51.6%) in terms of the total number of votes received in contested House races, but due to gerrymandered districts, only 3 of the state’s 13 seats remained Democratic. In addition, there were six ballot measures supported by the state’s Republican legislative majority; of these, two were rejected, but four were approved.
+The 2018 midterm elections also took place at an “unsettled time” (Swidler 1986) in North Carolina (and American) history. The partisan divide in the state had raised bitter debates over gerrymandering, transgender access to public restrooms, funding and governance of public universities, teacher pay, and many others. Understanding the dynamics of identity and voting decisions in 2018 pro- vides a window into the ways these decisions may respond to different unsettled environments as well. As a swing state with demographic shifts mirroring many national trends, North Carolina is an excellent site for detailed political study.
 
 ### Data Cleanup and Variable Transformation
 
@@ -88,3 +92,9 @@ Using county-level data that we have assembled for elections between 1969 and 20
 10. Charles, K. K., &amp; Stephens, M. (2011). Employment, Wages and Voter Turnout. doi:10.3386/w17270
 \newline
 11. Hills, M. (2020, September 25). US election 2020: A really simple guide. Retrieved October 20, 2020, from https://www.bbc.com/news/election-us-2020-53785985
+\newline
+12. Railey, K. (2016). Federal Judges Let Stand North Carolina,'s New Congressional Map. The Hotline. https://link.gale.com/apps/doc/A498010836/ITOF?u=duke_perkins&sid=ITOF&xid=119d6ad9
+\newline
+13. Perrin, A. J., &amp; Ifatunji, M. A. (2020). Race, Immigration, and Support for Donald Trump: Evidence From the 2018 North Carolina Election. Sociological Forum, 35(S1), 941-953. doi:10.1111/socf.12600
+\newline
+14. Redistricting in North Carolina. (2020). Retrieved October 21, 2020, from https://ballotpedia.org/Redistricting_in_North_Carolina
