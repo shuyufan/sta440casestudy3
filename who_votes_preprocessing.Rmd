@@ -404,6 +404,10 @@ binary_model <-
       seed = 10)
 ```
 
+```{r}
+rand_effects_model = readRDS("randeff_sa_grouped_model_output.rds")
+```
+
 # sample freq model
 
 ```{r}
