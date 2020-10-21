@@ -136,7 +136,7 @@ voter_hist_districts_resp = voter_hist_districts %>%
     is.na(election_desc) ~ 0,
     TRUE ~ 1
   )) %>%
-  mutate(med_household_income = scale(med_household_income, center= TRUE, scale = TRUE)) %>% select(-county_id, -zip_code, -drivers_lic, -vtd_description, -election_desc)
+  select(-county_id, -zip_code, -drivers_lic, -vtd_description, -election_desc)
   
 ```
 
@@ -152,8 +152,8 @@ voter_hist_districts_resp = voter_hist_districts_resp %>%
     race_code == "W" ~ "White",
     race_code == "B" ~ "Black",
     TRUE ~ "Other"
-  ))  %>%
-  mutate(birth_age = scale(birth_age, center = TRUE, scale = TRUE))
+  ))  #%>%
+  #mutate(birth_age = scale(birth_age, center = TRUE, scale = TRUE))
 
 voter_hist_districts_resp$gender_code = ifelse(voter_hist_districts_resp$gender_code==" ", "U", as.character(voter_hist_districts_resp$gender_code))
 voter_hist_districts_resp$race_code = relevel(as.factor(voter_hist_districts_resp$race_code), ref = "White")
@@ -173,6 +173,51 @@ voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
 
 
+# grouping into subgroups (data munging)
+
+```{r}
+summary(voter_hist_districts_resp$birth_age)
+
+q25 = quantile(voter_hist_districts_resp$med_household_income, 0.25)
+q50 = quantile(voter_hist_districts_resp$med_household_income, 0.50)
+q75 = quantile(voter_hist_districts_resp$med_household_income, 0.75)
+
+# first we need to bin age
+voter_hist_districts_resp = voter_hist_districts_resp %>%
+  mutate(age_2016 = birth_age - 4) %>%
+  filter(!(age_2016 < 18)) %>%
+  mutate(age_binned = case_when(
+    age_2016 <= 29 ~ "18-29",
+    age_2016 >= 30 & age_2016 <= 44 ~ "30-44",
+    age_2016 >= 45 & age_2016 <= 59 ~ "45-59",
+    age_2016 >= 60 ~ "60+"
+  )) %>%
+  mutate(med_inc_binned = case_when(
+    med_household_income <=q25 ~ paste("<", q25),
+    med_household_income > q25 & med_household_income <= q50 ~ paste(q25, "_", q50),
+    med_household_income > q50 & med_household_income <= q75 ~ paste(q50, "_", q75),
+    med_household_income > q75 ~ paste(">", q75)
+  ))
+
+voter_grouped = voter_hist_districts_resp %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned) %>%
+  summarise(n = n(), votes = sum(vote_or_not))
+
+voter_grouped %>%
+  arrange(., n)
+```
+
+
+```{r}
+#saved data with binned age, binned income
+saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp_binned.rds")
+```
+
+
+```{r}
+# save grouped data
+saveRDS(voter_grouped, "grouped_voter_data.rds")
+```
 
 
 # eda
@@ -216,14 +261,14 @@ sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
 ```{r}
 # THIS IS FOR DEBUGGING PURPOSES ONE SPLIT
 ## 75% of the sample size
-smp_size <- floor(0.80 * nrow(voter_hist_districts_resp_small))
+smp_size <- floor(0.80 * nrow(voter_hist_districts_resp))
 
 ## set the seed to make your partition reproducible
 set.seed(123)
-train_ind <- sample(seq_len(nrow(voter_hist_districts_resp_small)), size = smp_size)
+train_ind <- sample(seq_len(nrow(voter_hist_districts_resp)), size = smp_size)
 
-train <- voter_hist_districts_resp_small[train_ind, ]
-test <- voter_hist_districts_resp_small[-train_ind, ]
+train <- voter_hist_districts_resp[train_ind, ]
+test <- voter_hist_districts_resp[-train_ind, ]
 
 # WHEN WE DO K FOLD AND HAVE K SPLIT
 # cat_col is what we want even distributions of
@@ -234,7 +279,133 @@ test <- voter_hist_districts_resp_small[-train_ind, ]
 # train_set <- train_set %>% arrange(.folds)
 ```
 
+# group train data
+
+```{r}
+set.seed(123)
+voter_grouped_train = train %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned) %>%
+  summarise(n = n(), votes = sum(vote_or_not))
+
+voter_grouped_train %>%
+  arrange(., n)
+
+voter_grouped_test = test %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned) %>%
+  summarise(n = n(), votes = sum(vote_or_not))
+
+voter_grouped_test %>%
+  arrange(., n)
+```
+
+# brms model with grouped data
+
+```{r}
+library(brms)
+binary_model <-
+  brm(data = voter_grouped_train, family = binomial,
+      votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
+      iter = 2500, warmup = 500, cores = 2, chains = 2,
+      seed = 10)
+summary(binary_model)
+```
+
+# traceplots (might want other things)!
+
+```{r}
+post <- posterior_samples(binary_model, add_chain = T)
+
+post1 = post[,c(1:4,length(post)-1, length(post))]
+post2 = post[,5:8]
+post3 = post[,9:12]
+post4 = post[,13:16]
+post5 = post[,17:20]
+post6 = post[,21:24]
+post7 = post[,25:28]
+post8 = post[,29:32]
+post9 = post[,33:36]
+
+post1 %>% 
+  #select(-lp__) %>% 
+  gather(key, value, -chain, -iter) %>% 
+  mutate(chain = as.character(chain)) %>% 
+
+  ggplot(aes(x = iter, y = value, group = chain, color = chain)) +
+  geom_line(size = 1/15) +
+  scale_color_manual(values = c("#80A0C7", "#B1934A", "#A65141", "#EEDA9D")) +
+  scale_x_continuous(NULL, breaks = c(1001, 5000)) +
+  ylab(NULL) +
+  #theme_pearl_earring +
+  theme(legend.position  = c(.825, .06),
+        legend.direction = "horizontal") +
+  facet_wrap(~key, ncol = 2, scales = "free_y")
+```
+
+
+# sample interpretation plot
+
+```{r}
+# plot(binary_model, effects = "age_binned:party_cd", ncol = NULL, points = FALSE,
+#   rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
+#   "raster"), line_args = list(), cat_args = list(),
+#   errorbar_args = list(), surface_args = list(),
+#   spaghetti_args = list(), point_args = list(), rug_args = list(),
+#   theme = NULL, ask = TRUE, plot = TRUE)
+
+conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
+plot(conditional_effects(binary_model, effects = "party_cd:age_binned",
+                      conditions = conditions))
+
+# install.packages("visreg")
+# library(visreg)
+# 
+# visreg(binary_model, xvar = "")
+# visreg(binary_model, "party_cd", by="gender_code", scale="response", overlay=TRUE, rug=FALSE,ylab="Probability", gg=TRUE)
+```
+
+
+```{r}
+predicted <- predict(binary_model, voter_grouped_test, type="response")
+predicted[,1]/voter_grouped_test$n
+```
+
+# validation
+
+```{r}
+kfold(binary_model, compare = TRUE, K = 3, Ksub = NULL,
+  folds = NULL, group = NULL, exact_loo = NULL, resp = NULL,
+  model_names = NULL, save_fits = FALSE)
+```
+
+```{r}
+kfold(binary_model, compare = TRUE, K = 5, Ksub = NULL,
+  folds = NULL, group = NULL, exact_loo = NULL, resp = NULL,
+  model_names = NULL, save_fits = FALSE)
+```
+
+# SENSITIVITY ANALYSIS 
+
+we want one frequentist, one with random effects (congressional district), try some new priors on the model we have
+
+```{r}
+voter_grouped_sa = train %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
+  summarise(n = n(), votes = sum(vote_or_not))
+
+voter_grouped_sa %>%
+  arrange(., n)
+
+saveRDS(voter_grouped_sa, "voter_grouped_sa_ra.rds")
+
+binary_model <-
+  brm(data = voter_grouped_sa, family = binomial,
+      votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code*party_cd + race_code*party_cd + gender_code*age_binned + party_cd*age_binned + (1|cong_dist_abbrv),
+      iter = 4500, warmup = 500, cores = 2, chains = 2,
+      seed = 10)
+```
+
 # sample freq model
+
 ```{r}
 library(lme4)
 
@@ -443,7 +614,7 @@ model_output
 saveRDS(model_output, "model_output_preds_n1000_iter1000.rds")
 ```
 
-# brm stuff that doesnt work bc amy made us do it
+# brm stuff 
 
 ```{r}
 library(brms)
