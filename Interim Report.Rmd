@@ -31,6 +31,9 @@ library(knitr)
 library(tidyverse)
 library(stringr)
 library(stringi)
+library(grid)
+library(ggplotify)
+library(brms)
 ```
 
 ## Introduction
@@ -64,7 +67,83 @@ Charles on employment, wage and voter turnout: why we selected median income to 
 \newline
 Using county-level data that we have assembled for elections between 1969 and 2000, and employing a variety of OLS and TSLS models, we find that increases in local per capita earnings and log employment per adult reduce voter turnout in gubernatorial, congressional, senatorial and state legislative elections, but have no statistically significant effect on turnout in presidential contests. 
 
+# Results and Interpretations
+
+```{r, read-in-the-model}
+binary_model = readRDS("grouped_model_no_randeff_whole_dataset.rds")
+```
+
+
+```{r, coeff-table, echo = F}
+coef_table = round(fixef(binary_model),2)
+colnames(coef_table) = c("Estimate", "Std. Error", "2.5% Quantile", "97.5% Quantile")
+rownames(coef_table) = c("Intercept", "Median Income > 64509", "Median Income 46864-52798", "Median Income 52798-64509", "Gender Male", "Gender Unspecified", "Race Black", "Race Other", "Age 30-44", "Age 45-59", "Age 60+", "Party Other", "Party Republican", "Gender Male:Party Other", "Gender Unspecified:Party Other", "Gender Male:Party Republican", "Gender Unspecified:Party Other", "Race Black:Party Other", "Race Other:Party Other", "Race Black:Party Republican", "Race Other:Party Republican", "Gender Male:Age 30-44", "Gender Unspecified:Age 30-44", "Gender Male:Age 45-59", "Gender Unspecified:Age 45-59", "Gender Male:Age 60+", "Gender Unspecified:Age 60+", "Age 30-44:Party Other", "Age 45-59:Party Other", "Age 60+:Party Other", "Age 30-44:Party Republican", "Age 45-59:Party Republican", "Age 60+:Party Republican")
+kable(coef_table)
+```
+
+```{r plot-to-interpret-main, echo = F, fig.height=4, fig.width = 8}
+# also will need to change the order of the ages here
+plot(conditional_effects(binary_model, effects = "age_binned"))
+```
+
+From the plot above, we see that the expected probability of voting tends to increase with median household income, holding all other demographic attributes constant.
+
+```{r plot-to-interpret-interactions, echo = F, fig.height=4, fig.width = 8}
+conditions <- data.frame(gender_code = as.character(c("F", "M", "U")))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = data.frame(gender_code = c("F", "M", "U"))))
+```
+
+We can interpret each point in the plot above as follows: holding median household income level at baseline (less than $46,864) and age at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular race (x-axis), party (color), and gender (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.5, whereas the expected probability that a black, male, Republican votes is greater than 0.5. We can also see that women, regardless of race and party, are expected to be more likely to vote than men.
+
 # Appendix
+
+```{r main-effects-plots, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
+main_effects = c("med_inc_binned", "gender_code", "race_code", "age_binned", "party_cd")
+
+# as.grob does not work when run as part of the function for some reason
+# plot_maineff = function(var) {
+#   #as.grob(expression(
+#     plot(conditional_effects(binary_model, effects = var))#))
+# }
+
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = main_effects[1]))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = main_effects[2]))))
+p3 = as.grob(expression(plot(conditional_effects(binary_model, effects = main_effects[3]))))
+p4 = as.grob(expression(plot(conditional_effects(binary_model, effects = main_effects[4]))))
+p5 = as.grob(expression(plot(conditional_effects(binary_model, effects = main_effects[5]))))
+
+grid.arrange(grobs = list(p1, p2, p3, p4, p5), ncol = 2)
+```
+
+```{r interactions-plot1, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
+conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+```{r, interactions-plot-2, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
+conditions <- data.frame(party_cd = as.character(c("REP", "Other", "DEM")))
+conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+```{r, interactions-plot-3, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
+conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
+conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
 ## References
 
 1. Linzer, D. A. (2013). Dynamic Bayesian Forecasting of Presidential Elections in the States. Journal of the American Statistical Association, 108(501), 124-134. doi:10.1080/01621459.2012.737735
