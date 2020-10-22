@@ -169,6 +169,7 @@ saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
 ```
 
 # IMPORT rds
+
 ```{r}
 voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
@@ -304,11 +305,12 @@ voter_grouped_test %>%
 ```{r}
 library(brms)
 binary_model <-
-  brm(data = voter_grouped_train, family = binomial,
+  brm(data = voter_grouped, family = binomial,
       votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
       iter = 2500, warmup = 500, cores = 2, chains = 2,
       seed = 10)
 summary(binary_model)
+saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
 ```
 
 # traceplots (might want other things)!
@@ -346,22 +348,35 @@ post1 %>%
 # sample interpretation plot
 
 ```{r}
-# plot(binary_model, effects = "age_binned:party_cd", ncol = NULL, points = FALSE,
-#   rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
-#   "raster"), line_args = list(), cat_args = list(),
-#   errorbar_args = list(), surface_args = list(),
-#   spaghetti_args = list(), point_args = list(), rug_args = list(),
-#   theme = NULL, ask = TRUE, plot = TRUE)
-
 conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
+plot(conditional_effects(binary_model, effects = "gender_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "gender_code:age_binned",
+                      conditions = conditions))
 plot(conditional_effects(binary_model, effects = "party_cd:age_binned",
                       conditions = conditions))
 
-# install.packages("visreg")
-# library(visreg)
-# 
-# visreg(binary_model, xvar = "")
-# visreg(binary_model, "party_cd", by="gender_code", scale="response", overlay=TRUE, rug=FALSE,ylab="Probability", gg=TRUE)
+conditions <- data.frame(party_cd = as.character(c("REP", "Other", "DEM")))
+plot(conditional_effects(binary_model, effects = "gender_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "gender_code:age_binned",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "party_cd:age_binned",
+                      conditions = conditions))
+
+conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
+plot(conditional_effects(binary_model, effects = "gender_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "gender_code:age_binned",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "party_cd:age_binned",
+                      conditions = conditions))
 ```
 
 
@@ -389,7 +404,7 @@ kfold(binary_model, compare = TRUE, K = 5, Ksub = NULL,
 we want one frequentist, one with random effects (congressional district), try some new priors on the model we have
 
 ```{r}
-voter_grouped_sa = train %>%
+voter_grouped_sa = voter_hist_districts_resp %>%
   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
   summarise(n = n(), votes = sum(vote_or_not))
 
@@ -406,7 +421,7 @@ binary_model <-
 ```
 
 ```{r}
-rand_effects_model = readRDS("randeff_sa_grouped_model_output.rds")
+rand_effects_model = readRDS("randeff_sa_grouped_model_whole_data_output.rds")
 ```
 
 # sample freq model
