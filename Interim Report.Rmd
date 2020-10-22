@@ -90,7 +90,8 @@ From the plot above, we see that the expected probability of voting tends to inc
 
 ```{r plot-to-interpret-interactions, echo = F, fig.height=4, fig.width = 8}
 conditions <- data.frame(gender_code = as.character(c("F", "M", "U")))
-plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = data.frame(gender_code = c("F", "M", "U"))))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))))
 ```
 
 We can interpret each point in the plot above as follows: holding median household income level at baseline (less than $46,864) and age at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular race (x-axis), party (color), and gender (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.5, whereas the expected probability that a black, male, Republican votes is greater than 0.5. We can also see that women, regardless of race and party, are expected to be more likely to vote than men.
@@ -117,30 +118,40 @@ grid.arrange(grobs = list(p1, p2, p3, p4, p5), ncol = 2)
 
 ```{r interactions-plot1, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
 conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
-p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions))))
-p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions))))
-p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions))))
-p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions))))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))))))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-2, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
-conditions <- data.frame(party_cd = as.character(c("REP", "Other", "DEM")))
-conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
-p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions))))
-p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions))))
-p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions))))
-p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions))))
+conditions <- data.frame(party_cd = as.character(c("DEM", "REP", "Other")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "", "2" = "REP", "3" = "Other"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))))))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-3, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
 conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
-conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
-p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions))))
-p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions))))
-p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions))))
-p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions))))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
