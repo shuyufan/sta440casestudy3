@@ -3,11 +3,14 @@ title: "Interim Report: Who Votes in NC?"
 author: "Alexander Bendeck, Lynn Fan, Cathy Lee, Alice Liao, Justina Zou"
 date: "20 October 2020"
 fontsize: 11pt
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
 output: 
   pdf_document: 
   latex_engine: xelatex
   fig_width: 2
   fig_height: 1
+header-includes:
+- \usepackage{booktabs}
 ---
 
 ```{r setup, include=FALSE}
@@ -35,6 +38,7 @@ library(grid)
 library(ggplotify)
 library(brms)
 library(tidybayes) # easy residuals
+library(xtable)
 ```
 
 # Introduction
@@ -157,14 +161,36 @@ binary_model <-
 
 *TO DO: try to make this side by side*
 
-```{r, coeff-table, echo = F}
-coef_table = round(fixef(binary_model),2)
-colnames(coef_table) = c("Estimate", "Std. Error", "2.5% Quantile", "97.5% Quantile")
-rownames(coef_table) = c("Intercept", "Median Income > 64,509", "Median Income 46,864-52,798", "Median Income 52,798-64,509", "Gender Male", "Gender Unspecified", "Race Black", "Race Other", "Age 30-44", "Age 45-59", "Age 60+", "Party Republican", "Party Other", "Gender Male:Party Republican", "Gender Unspecified:Party Republican", "Gender Male:Party Other", "Gender Unspecified:Party Other", "Race Black:Party Republican", "Race Other:Party Republican",  "Race Black:Party Other", "Race Other:Party Other",  "Gender Male:Age 30-44", "Gender Unspecified:Age 30-44", "Gender Male:Age 45-59", "Gender Unspecified:Age 45-59", "Gender Male:Age 60+", "Gender Unspecified:Age 60+", "Age 30-44:Party Republican", "Age 45-59:Party Republican", "Age 60+:Party Republican", "Age 30-44:Party Other", "Age 45-59:Party Other", "Age 60+:Party Other")
-kable(coef_table) 
+```{r, coeff-table, include = F}
+coef_table1 = round(fixef(binary_model),2)[1:17,]
+colnames(coef_table1) = c("Est", "SE", "2.5% Q", "97.5% Q")
+rownames(coef_table1) = c("Intercept", "46.9k-52.8k", "52.8k-64.5k", ">64.6k", "Male", "Unspecified", "Black", "Other Race", "30-44", "45-59", "60+", "Republican", "Other Party","Male:Rep", "Unspec:Rep", "Male:Other Pty", "Unspec:Other Pty") 
+
+coef_table2 = round(fixef(binary_model),2)[18:33,]
+colnames(coef_table2) = c("Est", "SE", "2.5% Q", "97.5% Q")
+rownames(coef_table2) = c("Black:Rep", "Other:Rep",  "Black:Other Pty", "Other Race:Other Pty",  "Male:30-44", "Unspec:30-44", "Male:45-59", "Unspec:45-59", "Male:60+", "Unspec:60+", "30-44:Rep", "45-59:Rep", "60+:Rep", "30-44:Other Pty", "45-59:Other Pty", "60+:Other Pty")
 ```
 
-*TODO: talk about small SE (no identifiability issues!! goodness of fit) and say which are significant (credible interval doesn't contain 0), "other" level is not super informative anyway*
+```{r sample, echo=FALSE, results='asis'}
+t1 <- kable(coef_table1, format = "latex", booktabs = TRUE)
+t2 <- kable(coef_table2, format = "latex", booktabs = TRUE)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Coefficient Table Part 1}
+      \\centering",
+        t1,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\centering
+        \\caption{Coefficient Table Part 2}",
+        t2,
+    "\\end{minipage} 
+\\end{table}"
+))  
+```
+
+The table above shows that each coefficient has small standard errors (no indicatin of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model
 
 *TODO: label graphs*
 
@@ -209,6 +235,8 @@ k3_pred <- kfold_predict(k3, method = "fitted")
 k5_pred <- kfold_predict(k5, method = "fitted")
 k10_pred <- kfold_predict(k10, method = "fitted")
 ```
+
+*TODO: Interpret! (see response in google doc) and add external validation*
 
 ```{r rmse, include = F}
 # define a loss function
@@ -323,7 +351,7 @@ randeff_model_waic
 #saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
 ```
 
-*TODO: add some sentences*
+*TODO: add some sentences, look at the posterior distribution of the variance of the random effect (see how close it is to 0--if close to 0 then don't need it)*
 
 # Appendix
 
