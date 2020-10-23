@@ -68,7 +68,7 @@ The model takes the following form: *add latex?*
 
 $$
 \begin{aligned}
-logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509)
+logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509) + ...
 \end{aligned}
 $$
 
