@@ -129,23 +129,27 @@ voter_hist_districts_resp  = voter_hist_districts_resp  %>%
 
 # Method
 
-We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups.
+We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. Motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. We will then be able to get average estimates for each of the subgroups from the posterior distributions. Bayesian viewpoint is an intuitive way of incorporating data to update the estimates and this method allows us to quantify the uncertainty about the model. *Can't think of more justification for Bayesian*
 
-*add some Bayesian justification*
+From Exploratory Data Analysis and literature, we identify voters' income (binned), gender, race, age (binned) and party affiliation as potentially useful predictors in predicting voter turnout. Furthermore, literature suggests possible interations between some variables. Pew Research highlighted that historically party identification differs widely by gender (2020) and age (2016), J. Misra (2019) found while younger women voted at higher rates than younger men, women age 65 and older voted at lower rates than men in the same age range, Walker et al (2019) found there are differential impacts across race and party subgroups on turnout especially in North Carolina's due to its status as a swing state. 
+
+We propose a model with the folloing form: 
 *add priors (look at sensitivity analysis rmd)*
 
-The model takes the following form: *add latex? check Amy’s slide*
+The model takes the following form: *add latex, check Amy’s slide*
 https://amy-herring.github.io/STA440/decks/glmm_01_deck.html#/section-18
+
 
 $$
 \begin{aligned}
-logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509) + ...
+logit(Vote_i) = \beta_0 + \Sigma_{j \in S}\beta_{j}*I(Income_i = Income \ Categoty_j) + \Sigma_{j \in G}\beta_{j}*I(Gender_i = Gender \ Category_j) +\\
+\Sigma_{j \in R}\beta_{j}*I(Race_i = Race \ Category_j) + \Sigma_{j \in A}\beta_{j}*I(Age_i = Age \ Category_j) +\\
+\Sigma_{j \in P}\beta_{j}*I(Party_i = Party_Category_j) + \Sigma_{j \in G, k \in P}beta_{jk}I(Gender_i = Gender \ Category_j)I()
 \end{aligned}
 $$
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. *fit with whole dataset and run 5-cv for the main model*.
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
-*TODO: talk about interactions -- lit review justification*
 
 ```{r run-brms-model, cache = T}
 binary_model <-
@@ -492,3 +496,9 @@ https://www.ncleg.gov/EnactedLegislation/Statutes/PDF/BySection/Chapter_163/GS_1
 17. FairVote.org. (n.d.). Voter Turnout. Retrieved October 22, 2020, from https://www.fairvote.org/voter_turnout
 \newline
 18. McDonald, M. P. (2020). Voter Turnout Demographics. Retrieved October 23, 2020, from http://www.electproject.org/home/voter-turnout/demographics
+19. Y. Ghitza, A. Gelman’s (2013). Deep interactions with MRP: Election Turnout and Voting Patterns Among Small Electoral Subgroups. American Journal of Political Science 57 762– 776.
+20. Walker, H.L., Herron, M.C. & Smith, D.A. Early Voting Changes and Voter Turnout: North Carolina in the 2016 General Election. Polit Behav 41, 841–869 (2019). https://doi-org.proxy.lib.duke.edu/10.1007/s11109-018-9473-5 
+21. Pew Research Center (2020). Men and women in the U.S. continue to differ in voter turnout rate, party identification. https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/ 
+22. Pew Research Center (2016). Party affiliation among voters: 1992-2016. https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters-1992-2016/ 
+23. J. Misra (2019). Voter Turnout Rates Among All Voting Age and Major Racial and Ethnic Groups Were Higher Than in 2014. https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/
+
