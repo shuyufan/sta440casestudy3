@@ -23,7 +23,7 @@ library(R2jags)
 
 Copied from who_votes_eda.Rmd.
 
-```{r}
+```{r, eval = F}
 voter_small = readRDS("ncvoter_Statewide_small.rds") %>%
   filter(birth_age <= 116) %>%
   dplyr::select(-birth_year, -status_cd, -reason_cd)
@@ -51,7 +51,7 @@ voter_hist_filtered = voter_hist_county
 
 ## How many are missing, and how many can't be resolved?
 
-```{r}
+```{r, eval = F}
 nrow(voter_hist_filtered %>% 
   filter(is.na(cong_dist_abbrv)))
 
@@ -75,7 +75,7 @@ nrow(voter_hist_filtered %>%
 
 ## Let's resolve the ones we can
 
-```{r}
+```{r, eval = F}
 can_borrow <- voter_hist_filtered %>% 
   group_by(county_desc.x, cong_dist_abbrv) %>% 
   summarise(n=n()) %>% 
@@ -114,7 +114,7 @@ still_missing_zipcodes <- still_missing_zipcodes$zip_code
 
 # Filter missing districts
 
-```{r}
+```{r, eval = F}
 voter_hist_districts <- voter_hist_districts %>% 
   filter(!is.na(cong_dist_abbrv))
 ```
@@ -130,7 +130,7 @@ voter_hist_districts <- voter_hist_districts %>%
 
 # create response column
 
-```{r}
+```{r, eval = F}
 voter_hist_districts_resp = voter_hist_districts %>%
   mutate(vote_or_not = case_when(
     is.na(election_desc) ~ 0,
@@ -140,7 +140,7 @@ voter_hist_districts_resp = voter_hist_districts %>%
   
 ```
 
-```{r}
+```{r, eval = F}
 voter_hist_districts_resp = voter_hist_districts_resp %>%
   mutate(party_cd = as.character(party_cd)) %>%
   mutate(party_cd = case_when(
@@ -158,16 +158,18 @@ voter_hist_districts_resp = voter_hist_districts_resp %>%
 voter_hist_districts_resp$gender_code = ifelse(voter_hist_districts_resp$gender_code==" ", "U", as.character(voter_hist_districts_resp$gender_code))
 voter_hist_districts_resp$race_code = relevel(as.factor(voter_hist_districts_resp$race_code), ref = "White")
 
-
+voter_hist_districts_resp = voter_hist_districts_resp %>%
+  select(-voted_party_desc, -voted_county_desc)
 ```
 
 # Write to rds
 
-```{r}
+```{r, eval = F}
 saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
 ```
 
 # IMPORT rds
+
 ```{r}
 voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
@@ -176,8 +178,6 @@ voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 # grouping into subgroups (data munging)
 
 ```{r}
-summary(voter_hist_districts_resp$birth_age)
-
 q25 = quantile(voter_hist_districts_resp$med_household_income, 0.25)
 q50 = quantile(voter_hist_districts_resp$med_household_income, 0.50)
 q75 = quantile(voter_hist_districts_resp$med_household_income, 0.75)
@@ -208,13 +208,15 @@ voter_grouped %>%
 ```
 
 
-```{r}
+```{r, eval = F}
 #saved data with binned age, binned income
+voter_hist_districts_resp  = voter_hist_districts_resp  %>%
+  select(-pct_description)
 saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp_binned.rds")
 ```
 
 
-```{r}
+```{r, eval = F}
 # save grouped data
 saveRDS(voter_grouped, "grouped_voter_data.rds")
 ```
@@ -222,7 +224,7 @@ saveRDS(voter_grouped, "grouped_voter_data.rds")
 
 # eda
 
-```{r}
+```{r, eval = F}
 density_age_party <- ggplot(merge_small_samp, aes(birth_age,color=voted_party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
 stacked_race_party <- ggplot(merge_small_samp, aes(race_code,fill=voted_party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
 stacked_county_party <- ggplot(merge_small_samp, aes(county_id.x,fill=voted_party_cd)) + labs(y="Density", x = "County", title = "County v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
@@ -233,7 +235,7 @@ box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_b
 
 # build simple glm model
 
-```{r}
+```{r, eval = F}
 #voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds") 
 
 voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000)
@@ -244,7 +246,7 @@ voter_hist_districts_resp_small = sample_n(voter_hist_districts_resp, 1000)
 
 # checking accuracy for the simple glm model
 
-```{r}
+```{r, eval = F}
 # ideally should use test dataset for predict()
 prelim_logit_model.probs <- predict(prelim_logit_model, voter_hist_districts_resp_small, type = "response")
 prelim_logit_model.pred <- rep("0", nrow(voter_hist_districts_resp_small))
@@ -258,7 +260,7 @@ sum(diag(conf.matrix)/nrow(voter_hist_districts_resp_small))
 
 # test-train split
 
-```{r}
+```{r, eval = F}
 # THIS IS FOR DEBUGGING PURPOSES ONE SPLIT
 ## 75% of the sample size
 smp_size <- floor(0.80 * nrow(voter_hist_districts_resp))
@@ -281,7 +283,7 @@ test <- voter_hist_districts_resp[-train_ind, ]
 
 # group train data
 
-```{r}
+```{r, eval = F}
 set.seed(123)
 voter_grouped_train = train %>%
   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned) %>%
@@ -300,14 +302,21 @@ voter_grouped_test %>%
 
 # brms model with grouped data
 
-```{r}
+```{r, eval = F}
 library(brms)
 binary_model <-
-  brm(data = voter_grouped_train, family = binomial,
+  brm(data = voter_grouped, family = binomial,
       votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
       iter = 2500, warmup = 500, cores = 2, chains = 2,
       seed = 10)
 summary(binary_model)
+saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
+```
+
+# read in model
+
+```{r}
+binary_model = readRDS("grouped_model_no_randeff_whole_dataset.rds")
 ```
 
 # traceplots (might want other things)!
@@ -342,42 +351,78 @@ post1 %>%
 ```
 
 
-# sample interpretation plot
+# coefficient table
 
 ```{r}
-# plot(binary_model, effects = "age_binned:party_cd", ncol = NULL, points = FALSE,
-#   rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
-#   "raster"), line_args = list(), cat_args = list(),
-#   errorbar_args = list(), surface_args = list(),
-#   spaghetti_args = list(), point_args = list(), rug_args = list(),
-#   theme = NULL, ask = TRUE, plot = TRUE)
+library(knitr)
+coef_table = fixef(binary_model)
+colnames(coef_table) = c("Estimate", "Std. Error", "2.5% Quantile", "97.5% Quantile")
+rownames(coef_table) = c("Intercept", "Median Income > 64509", "Median Income 46864-52798", "Median Income 52798-64509", "Gender Male", "Gender Unspecified", "Race Black", "Race Other", "Age 30-44", "Age 45-59", "Age 60+", "Party Other", "Party Republican", "Gender Male:Party Other", "Gender Unspecified:Party Other", "Gender Male:Party Republican", "Gender Unspecified:Party Other", "Race Black:Party Other", "Race Other:Party Other", "Race Black:Party Republican", "Race Other:Party Republican", "Gender Male:Age 30-44", "Gender Unspecified:Age 30-44", "Gender Male:Age 45-59", "Gender Unspecified:Age 45-59", "Gender Male:Age 60+", "Gender Unspecified:Age 60+", "Age 30-44:Party Other", "Age 45-59:Party Other", "Age 60+:Party Other", "Age 30-44:Party Republican", "Age 45-59:Party Republican", "Age 60+:Party Republican")
+kable(coef_table)
+```
 
+# plot all the main effects
+
+```{r}
+plot(conditional_effects(binary_model, effects = "party_cd"))
+
+
+
+par(mfrow = c(2,2))
 conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
+plot(
+  conditional_effects(binary_model, effects = "gender_code:party_cd",
+                      conditions = conditions))
+plot(
+  conditional_effects(binary_model, effects = "race_code:party_cd",
+                      conditions = conditions))
+plot(
+  conditional_effects(binary_model, effects = "gender_code:age_binned",
+                      conditions = conditions))
+plot(
+  conditional_effects(binary_model, effects = "party_cd:age_binned",
+                      conditions = conditions))
+# library(gridExtra)
+# plist = list(p1, p2, p3, p4)
+# do.call(grid.arrange, plist)
+# grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+
+conditions <- data.frame(party_cd = as.character(c("REP", "Other", "DEM")))
+plot(conditional_effects(binary_model, effects = "gender_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "gender_code:age_binned",
+                      conditions = conditions))
 plot(conditional_effects(binary_model, effects = "party_cd:age_binned",
                       conditions = conditions))
 
-# install.packages("visreg")
-# library(visreg)
-# 
-# visreg(binary_model, xvar = "")
-# visreg(binary_model, "party_cd", by="gender_code", scale="response", overlay=TRUE, rug=FALSE,ylab="Probability", gg=TRUE)
+conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
+plot(conditional_effects(binary_model, effects = "gender_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "race_code:party_cd",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "gender_code:age_binned",
+                      conditions = conditions))
+plot(conditional_effects(binary_model, effects = "party_cd:age_binned",
+                      conditions = conditions))
 ```
 
 
-```{r}
+```{r, eval = F}
 predicted <- predict(binary_model, voter_grouped_test, type="response")
 predicted[,1]/voter_grouped_test$n
 ```
 
 # validation
 
-```{r}
+```{r, eval = F}
 kfold(binary_model, compare = TRUE, K = 3, Ksub = NULL,
   folds = NULL, group = NULL, exact_loo = NULL, resp = NULL,
   model_names = NULL, save_fits = FALSE)
 ```
 
-```{r}
+```{r, eval = F}
 kfold(binary_model, compare = TRUE, K = 5, Ksub = NULL,
   folds = NULL, group = NULL, exact_loo = NULL, resp = NULL,
   model_names = NULL, save_fits = FALSE)
@@ -387,8 +432,8 @@ kfold(binary_model, compare = TRUE, K = 5, Ksub = NULL,
 
 we want one frequentist, one with random effects (congressional district), try some new priors on the model we have
 
-```{r}
-voter_grouped_sa = train %>%
+```{r, eval = F}
+voter_grouped_sa = voter_hist_districts_resp %>%
   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
   summarise(n = n(), votes = sum(vote_or_not))
 
@@ -404,9 +449,13 @@ binary_model <-
       seed = 10)
 ```
 
+```{r, eval = F}
+rand_effects_model = readRDS("randeff_sa_grouped_model_whole_data_output.rds")
+```
+
 # sample freq model
 
-```{r}
+```{r, eval = F}
 library(lme4)
 
 train = train %>%
@@ -416,7 +465,7 @@ formula = vote_or_not ~ med_household_income + gender_code + race_code + birth_a
 freq_logit_model = glmer(formula = formula, data = train, family = "binomial")
 ```
 
-```{r}
+```{r, eval = F}
 test_freq_logit_model.probs <- predict(prelim_logit_model, voter_hist_districts_resp_small, type = "response")
 prelim_logit_model.pred <- rep("0", nrow(voter_hist_districts_resp_small))
 prelim_logit_model.pred[prelim_logit_model.probs > 0.5] <- 1 # if prob > 0.5, predicted vote_or_not is 1
@@ -476,7 +525,7 @@ alphabetized_counties = sort(unique(train$county_desc))
 county = match(train$county_desc, alphabetized_counties)
 ```
 
-```{r}
+```{r, eval = F}
 # THIS IS SAMPLE STRUCTURE CODE FROM GELMAN AND HILL
 # X[i, ] %*% beta
 
@@ -562,7 +611,7 @@ model1 <- function() {
 }
 ```
 
-```{r}
+```{r, eval = F}
 n = nrow(train)
 y = train$vote_or_not
 
@@ -616,7 +665,7 @@ saveRDS(model_output, "model_output_preds_n1000_iter1000.rds")
 
 # brm stuff 
 
-```{r}
+```{r, eval = F}
 library(brms)
 binary_model <- brm(formula = vote_or_not ~  med_household_income+gender_code + race_code + ethnic_code + birth_age + party_cd + gender_code*party_cd + (1|county_desc),
                    data=train,
@@ -630,7 +679,7 @@ binary_model <- brm(formula = vote_or_not ~  med_household_income+gender_code + 
 binary_model
 ```
 
-```{r}
+```{r, eval = F}
 library(rethinking)
 data(UCBadmit)
 d <- UCBadmit
@@ -645,7 +694,7 @@ d$successrate=d$admit/d$applications
 sum(d$admit[d$male==1])/sum(d$applications[d$male==1])
 ```
 
-```{r}
+```{r, eval = F}
 adm2 <- 
   brm(data = train, family = binomial,
       admit | trials(applications) ~ 1 + male + (1 | dept_id),
@@ -660,7 +709,7 @@ adm2 <-
 
 # make values for plot
 
-```{r}
+```{r, eval = F}
 library(boot)
 res = model_output$BUGSoutput$summary
 age_range = seq(-3, 2, 0.1)
