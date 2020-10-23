@@ -14,7 +14,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r packages, include=FALSE}
+```{r packages, include=FALSE, message = F}
 library(gtable)
 library(ggplot2)
 library(gridExtra)
@@ -52,6 +52,8 @@ Additionally, we found relevant literature proving the relationship between vote
 
 ## Data Munging
 
+## Methods
+
 After binding ncvhis files and ncvoter files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. 
 # TODO Justina: can u write about the details in which we match by counties?
 In the combined data set, there are party registrations for all parties, including The Libertarian Party and The Green Party. Because we are interested primarily only in the Republican Party and the Democratic Party and there are concerning class imbalance issues as the two parties take up the majority of registered voter population, we binded other parties as the third category `Other` for `Party`. Similarly, because of class imbalance, we binded the races other than White and African Americans as `Other` for `Race` as well. For those missing `Gender` information, we binded them with `Unspecified`.
@@ -60,10 +62,22 @@ Because we have eight million data points available, running models in a one-lin
 
 # Method
 
+We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman's idea of poststratification (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups. 
+
+The model takes the following form: *add latex?*
+
+$$
+\begin{aligned}
+logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509) + ...
+\end{aligned}
+$$
+
+
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors, interactions and random effect and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. Before fitting any model, we preserved 20% of the full dataset as test data (*or are we doing 5-fold CV*) to quantitatively evaluate the models. 
 
 # Results and Interpretations
 
-```{r, read-in-the-model}
+```{r, read-in-the-model, echo=F, message=F}
 binary_model = readRDS("grouped_model_no_randeff_whole_dataset.rds")
 ```
 
