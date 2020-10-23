@@ -14,7 +14,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r packages, include=FALSE}
+```{r packages, include=FALSE, message = F}
 library(gtable)
 library(ggplot2)
 library(gridExtra)
@@ -56,9 +56,18 @@ Why we selected only the year of 2016? Significance of presidential election yea
 
 ## Methods
 
-We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman's idea of poststratification (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups. Random effect at the congressional district level is introduced too to account for any possible unexplained variation within each congressional district. 
+We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman's idea of poststratification (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups. 
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors, interactions and random effect and the other a similar Bayesian model with the random effect removed. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
+The model takes the following form: *add latex?*
+
+$$
+\begin{aligned}
+logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509)
+\end{aligned}
+$$
+
+
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors, interactions and random effect and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. Before fitting any model, we preserved 20% of the full dataset as test data (*or are we doing 5-fold CV*) to quantitatively evaluate the models. 
 
 ### Variable Selection
 
@@ -73,7 +82,7 @@ Using county-level data that we have assembled for elections between 1969 and 20
 
 # Results and Interpretations
 
-```{r, read-in-the-model}
+```{r, read-in-the-model, echo=F, message=F}
 binary_model = readRDS("grouped_model_no_randeff_whole_dataset.rds")
 ```
 
