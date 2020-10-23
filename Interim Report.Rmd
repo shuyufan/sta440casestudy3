@@ -138,11 +138,13 @@ https://amy-herring.github.io/STA440/decks/glmm_01_deck.html#/section-18
 
 $$
 \begin{aligned}
-logit(Vote_i) = \beta_0 + \sigma
+logit(Vote_i) = \beta_0 + \Sigma_{j \in S}\beta_{j}*I(Income_i = Income \ Categoty_j) + \Sigma_{j \in G}\beta_{j}*I(Gender_i = Gender \ Category_j) +\\
+\Sigma_{j \in R}\beta_{j}*I(Race_i = Race \ Category_j) + \Sigma_{j \in A}\beta_{j}*I(Age_i = Age \ Category_j) +\\
+\Sigma_{j \in P}\beta_{j}*I(Party_i = Party_Category_j) + \Sigma_{j \in G, k \in P}beta_{jk}I(Gender_i = Gender \ Category_j)I()
 \end{aligned}
 $$
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. *fit with whole dataset and run cv for the main model*.
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
 
 ```{r run-brms-model, cache = T}
