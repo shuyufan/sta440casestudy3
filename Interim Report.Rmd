@@ -66,17 +66,6 @@ We divided (1) median county household income into four levels by the 25th, 50th
 
 # EDA
 
-```{r, eval = F}
-density_age_party <- ggplot(merge_small_samp, aes(birth_age,color=voted_party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
-stacked_race_party <- ggplot(merge_small_samp, aes(race_code,fill=voted_party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
-stacked_county_party <- ggplot(merge_small_samp, aes(county_id.x,fill=voted_party_cd)) + labs(y="Density", x = "County", title = "County v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
-stacked_county_race <- ggplot(merge_small_samp, aes(county_id.x,fill=race_code)) + labs(y="Density", x = "County", title = "County v. Race", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
-stacked_state_race <- ggplot(merge_small_samp, aes(birth_state,fill=race_code)) + labs(y="Density", x = "Birth State", title = "Birth State v. Race", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
-```
-
-## EDA
-
 ```{r import-data, include = F}
 voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
@@ -121,6 +110,22 @@ voter_grouped %>%
 voter_hist_districts_resp  = voter_hist_districts_resp  %>%
   select(-pct_description)
 # saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp_binned.rds")
+```
+
+votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned
+
+```{r EDA prep, include=F}
+voter_grouped$voterpercent <- voter_grouped$votes / voter_grouped$n
+```
+
+```{r EDA, echo=F}
+binned_race_party <- ggplot(voter_grouped, aes(x = race_code, y = voterpercent)) + geom_bar(aes(fill = party_cd), stat = "identity", position = "dodge") + labs(y="Turnout Percentage", x = "Race", title = "Voter Turnout for Different \n Party Affliation and Race") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+binned_gender_party <- ggplot(voter_grouped, aes(x = gender_code, y = voterpercent)) + geom_bar(aes(fill = party_cd), stat = "identity") + labs(y="Turnout Percentage", x = "Gender", title = "Voter Turnout for Different \n Party Affliation and Gender") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+binned_age_gender <- ggplot(voter_grouped, aes(x = age_binned, y = voterpercent)) + geom_bar(aes(fill = gender_code), stat = "identity", position = "dodge") + labs(y="Turnout Percentage", x = "Age", title = "Voter Turnout for Different Age and Gender") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+binned_age_party <- ggplot(voter_grouped, aes(x = party_cd, y = voterpercent)) + geom_bar(aes(fill = age_binned), stat = "identity") + labs(y="Turnout Percentage", x = "Registered Party", title = "Voter Turnout for Different \n Party Affliation and Age") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+
+
+grid.arrange(grobs = list(binned_race_party, binned_gender_party, binned_age_gender, binned_age_party), ncol = 2)
 ```
 
 # Method
@@ -425,6 +430,8 @@ summary(freq_model)
 confint(freq_model)
 ```
 
+# Appendix
+
 ## References
 
 1. Linzer, D. A. (2013). Dynamic Bayesian Forecasting of Presidential Elections in the States. Journal of the American Statistical Association, 108(501), 124-134. doi:10.1080/01621459.2012.737735
@@ -464,3 +471,16 @@ https://www.ncleg.gov/EnactedLegislation/Statutes/PDF/BySection/Chapter_163/GS_1
 17. FairVote.org. (n.d.). Voter Turnout. Retrieved October 22, 2020, from https://www.fairvote.org/voter_turnout
 \newline
 18. McDonald, M. P. (2020). Voter Turnout Demographics. Retrieved October 23, 2020, from http://www.electproject.org/home/voter-turnout/demographics
+
+## EDA
+
+```{r, eval = F}
+binned_income <- ggplot(voter_grouped, aes(x = med_inc_binned, y = voterpercent)) + geom_bar(stat = "identity") + labs(aes(fill = party_cd), y="Turnout Percentage", x = "County Median Household Income", title = "Voter Turnout for Different \n Median Household Income and Party Affliation") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+density_age_party <- ggplot(voter_hist_districts_resp, aes(birth_age,color=party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
+stacked_race_party <- ggplot(voter_hist_districts_resp, aes(race_code,fill=party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+box_age_race <- ggplot(voter_hist_districts_resp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
+binned_income
+density_age_party
+stacked_race_party
+box_age_race
+```
