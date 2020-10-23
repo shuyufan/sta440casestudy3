@@ -55,13 +55,10 @@ From the ncvhis files, we only kept the voters that voted for the 2016 general e
 Additionally, we found relevant literature proving the relationship between voter turnout and wage (Charles et al.), so we found county-level median household income data from Economic Research Service under United States Department of Agriculture (https://www.ers.usda.gov/data-products/county-level-data-sets)
 
 ## Data Munging
-<<<<<<< HEAD
 *TO DO: more justification on grouping*
 
-=======
-
 #Missing data: n = is missing for x
->>>>>>> 427f40ce50c31006703aa12b4042c81c71d16c9f
+
 After binding ncvhis files and ncvoter files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. We imputed the missing districts by matching the voter's registered county with congressional district. We removed the 4\% of voters who reside in counties that span across more than one county.
 Because we have eight million data points available, running models in a one-line-per-voter data set will be very computationally expensive. We instead decided to group data points by gender, race, party registration, county median income, and age, so that we can run models for the data set in a collapsed format. In the combined data set, there are party registrations for all parties, including The Libertarian Party and The Green Party. Because we are interested primarily only in the Republican Party and the Democratic Party and there are concerning class imbalance issues as the two parties take up the majority of registered voter population, we binded other parties as the third category `Other` for `Party`. Similarly, because of class imbalance, we binded the races other than White and African Americans as `Other` for `Race` as well. For those missing `Gender` information, we binded them with `Unspecified`.
 \newline
