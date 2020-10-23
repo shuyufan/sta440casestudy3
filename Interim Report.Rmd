@@ -36,25 +36,31 @@ library(ggplotify)
 library(brms)
 ```
 
-## Introduction
+# Introduction
 
-
-### Context: Why Is Voter Turnout Prediction Important
-
-The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the Congressional Election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence from political scientists regarding this claim (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both Congressional Elections and Presidential races. For example, gender, race and party registration could help profile voting patterns for Congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
+The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the congressional election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence about this theory (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both congressional elections and presidential races. For example, gender, race and party registration could help profile voting patterns for congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
 \newline
-This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.  
-TODO: Why NC? Discuss how NC has been a swing state and has complex demographic composition that will shed light to methodologies helpful to predict other states as well.
+Among all states, North Carolina has been as a swing state in presidential and congressional elections for decades. In 2008, Obama won the state narrowly, but lost it narrowly after 4 years in 2012. Since 1996, the Republican statewide vote share in congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014 (Perrin et al.)." It makes North Carolina an interesting battleground in which voter demographic changes could potentially lead to significant implications of election outcomes and "an excellent site for those interested in partisan voting trends (Perrin et al.)." This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.
 
-## Data Description
+# Data Description
 
-### Where the data comes from
+We are using public data provided by the NC State Board of Elections, which can all be accessed directly at the link https://dl.ncsbe.gov/list.html. The database contains voter history information for elections within the past 10 years in the ncvhis files, and all legally available voter specific information ion the ncvoter files. The ncvoter files contain point-in-time snapshot voter registration data. For privacy concerns, names, birth dates and drivers license are not included, but the two types of files could be matched by North Carolina identification (NCID) number. The database was last updated on September 9, 2020. While we understand that voters might register later than that as the voter registration deadline for North Carolina is October 9, 2020, we believe it is sufficient to represent the majority of NC potential voters.
+\newline
+From the ncvhis files, we only kept the voters that voted for the 2016 general election for our analysis. Studies have shown that presidential elections help mobilize voters, so voter turnout in presidential election years are significantly higher. In recent elections, voter turnout during presidential election years is around 60%, and only about 40% during midterm elections (FairVote.org). For North Carolina, voter turnout data in 2018 is also inappropriate to use because neither of North Carolina’s U.S. senators nor the governor was up for reelection, further demotivated voters (Perrin et al.). From the ncvoter files, we filtered demographic factors that are supported by existing literature to be significant in understanding voting patterns, including gender, race, party registration, and age (Kim et al.). We also have their county and congressional district information available. 
+\newline
+Additionally, we found relevant literature proving the relationship between voter turnout and wage (Charles et al.), so we found county-level median household income data from Economic Research Service under United States Department of Agriculture (https://www.ers.usda.gov/data-products/county-level-data-sets)
 
-Why we selected only the year of 2016? Significance of presidential election year, but needs literature review to confirm.
-
-### Data Cleanup and Variable Transformation
+## Data Munging
 
 ## Methods
+
+After binding ncvhis files and ncvoter files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. 
+# TODO Justina: can u write about the details in which we match by counties?
+In the combined data set, there are party registrations for all parties, including The Libertarian Party and The Green Party. Because we are interested primarily only in the Republican Party and the Democratic Party and there are concerning class imbalance issues as the two parties take up the majority of registered voter population, we binded other parties as the third category `Other` for `Party`. Similarly, because of class imbalance, we binded the races other than White and African Americans as `Other` for `Race` as well. For those missing `Gender` information, we binded them with `Unspecified`.
+\newline
+Because we have eight million data points available, running models in a one-line-per-voter data set will be very computationally expensive. We instead decided to group data points by gender, race, party registration, county median income, and age, so that we can run models for the data set in a collapsed format. We divided (1) median county household income into four levels by the 25th, 50th, and 75th quantiles; (2) age into four levels for 18-29, 30-44, 45-59, and older than 60 years old, as it is a common way to analyze voter ages (McDonald, 2020); (3) gender into three categories, Female, Male and Other, and (4) race into three categories, Black, White, and Other.
+
+# Method
 
 We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman's idea of poststratification (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups. 
 
@@ -68,17 +74,6 @@ $$
 
 
 In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors, interactions and random effect and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. Before fitting any model, we preserved 20% of the full dataset as test data (*or are we doing 5-fold CV*) to quantitatively evaluate the models. 
-
-### Variable Selection
-
-Why we selected gender, race, party to be significant, among others (from Uhlaner):
-\newline
-We focus on race, ethnicity, and gender as they are important categories in contemporary U.S. politics. Our study thus adds to the minority empowerment literature. But treating these categories separately misses a crucial point: they intersect, and that intersectionality matters. White women have different experiences than Latinas; African American men have different experiences than African American women. In this article, we assess whether being collectively descriptively represented affects turnout by looking at seven elections, the presidential races of 2000, 2004, 2008, and 2012, and the off-year elections of 2002, 2006, and 2010 to assess the intersectional impact of collective descriptive representation on voter participation.
-There are well-established results on the participation of people of different gender, ethnicity, and race. Overall, historically white males had the highest voting rates in the United States, but the gender edge evaporated in the 1980s while racial and ethnic dif- ferences have narrowed, but remain. The turnout rates for men and women became essentially equal in 1980 and 1982, and ever since they have been higher for women (Center for American Women and Politics 2011).4 Note, however, that for most politi- cal activities other than voting, men still outpace women (Conway, Steuernagel, and Ahern 2005, 94–97; Verba, Schlozman, and Brady 1995, 254–57). African Americans also, historically, participated less than other Americans. That gap has been decreas- ing, reflecting the Civil Rights movement and other changes, until by 1990 the African American turnout rate was close to that of whites. Obama’s candidacy and presidency has further mobilized African American voting; in 2008, turnout of African Americans was just 1.4 points below that of non-Hispanic whites and moved 2 points higher in 2012 (File 2013, 3).5 Latinos vote at lower rates than either African Americans or whites, even when the comparison is, appropriately, limited to citizens. 
-\newline
-Charles on employment, wage and voter turnout: why we selected median income to be significant
-\newline
-Using county-level data that we have assembled for elections between 1969 and 2000, and employing a variety of OLS and TSLS models, we find that increases in local per capita earnings and log employment per adult reduce voter turnout in gubernatorial, congressional, senatorial and state legislative elections, but have no statistically significant effect on turnout in presidential contests. 
 
 # Results and Interpretations
 
@@ -198,3 +193,19 @@ grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 10. Charles, K. K., &amp; Stephens, M. (2011). Employment, Wages and Voter Turnout. doi:10.3386/w17270
 \newline
 11. Hills, M. (2020, September 25). US election 2020: A really simple guide. Retrieved October 20, 2020, from https://www.bbc.com/news/election-us-2020-53785985
+\newline
+12. Railey, K. (2016). Federal Judges Let Stand North Carolina,'s New Congressional Map. The Hotline. https://link.gale.com/apps/doc/A498010836/ITOF?u=duke_perkins&sid=ITOF&xid=119d6ad9
+\newline
+13. Perrin, A. J., &amp; Ifatunji, M. A. (2020). Race, Immigration, and Support for Donald Trump: Evidence From the 2018 North Carolina Election. Sociological Forum, 35(S1), 941-953. doi:10.1111/socf.12600
+\newline
+14. Redistricting in North Carolina. (2020). Retrieved October 21, 2020, from https://ballotpedia.org/Redistricting_in_North_Carolina
+\newline
+15. Â§ 132-1. Public Records.
+https://www.ncleg.gov/EnactedLegislation/Statutes/PDF/BySection/Chapter_132/GS_132-1.pdf
+\newline
+16. Â§ 163-82.10.  Official record of voter registration.
+https://www.ncleg.gov/EnactedLegislation/Statutes/PDF/BySection/Chapter_163/GS_163-82.10.pdf
+\newline
+17. FairVote.org. (n.d.). Voter Turnout. Retrieved October 22, 2020, from https://www.fairvote.org/voter_turnout
+\newline
+18. McDonald, M. P. (2020). Voter Turnout Demographics. Retrieved October 23, 2020, from http://www.electproject.org/home/voter-turnout/demographics
