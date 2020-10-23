@@ -101,7 +101,7 @@ binary_model_newpriors <-
       iter = 2500, warmup = 500, cores = 2, chains = 2,
       seed = 10,
       prior=priors)
-summary(binary_model_newpriors)
+#summary(binary_model_newpriors)
 #prior_summary(binary_model_newpriors)
 #saveRDS(binary_model_newpriors, "grouped_model_no_randeff_newpriors_whole_dataset.rds")
 ```
