@@ -34,6 +34,7 @@ library(stringi)
 library(grid)
 library(ggplotify)
 library(brms)
+library(tidybayes) # easy residuals
 ```
 
 # Introduction
@@ -54,8 +55,10 @@ From the ncvhis files, we only kept the voters that voted for the 2016 general e
 Additionally, we found relevant literature proving the relationship between voter turnout and wage (Charles et al.), so we found county-level median household income data from Economic Research Service under United States Department of Agriculture (https://www.ers.usda.gov/data-products/county-level-data-sets)
 
 ## Data Munging
+*TO DO: more justification on grouping*
 
 #Missing data: n = is missing for x
+
 After binding ncvhis files and ncvoter files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. We imputed the missing districts by matching the voter's registered county with congressional district. We removed the 4\% of voters who reside in counties that span across more than one county.
 Because we have eight million data points available, running models in a one-line-per-voter data set will be very computationally expensive. We instead decided to group data points by gender, race, party registration, county median income, and age, so that we can run models for the data set in a collapsed format. In the combined data set, there are party registrations for all parties, including The Libertarian Party and The Green Party. Because we are interested primarily only in the Republican Party and the Democratic Party and there are concerning class imbalance issues as the two parties take up the majority of registered voter population, we binded other parties as the third category `Other` for `Party`. Similarly, because of class imbalance, we binded the races other than White and African Americans as `Other` for `Race` as well. For those missing `Gender` information, we binded them with `Unspecified`.
 \newline
@@ -72,11 +75,63 @@ stacked_state_race <- ggplot(merge_small_samp, aes(birth_state,fill=race_code)) 
 box_age_race <- ggplot(merge_small_samp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
 ```
 
+## EDA
+
+```{r import-data, include = F}
+voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
+```
+
+```{r age-median_inc, include = F}
+q25 = quantile(voter_hist_districts_resp$med_household_income, 0.25)
+q50 = quantile(voter_hist_districts_resp$med_household_income, 0.50)
+q75 = quantile(voter_hist_districts_resp$med_household_income, 0.75)
+
+# first we need to bin age
+voter_hist_districts_resp = voter_hist_districts_resp %>%
+  mutate(age_2016 = birth_age - 4) %>%
+  filter(!(age_2016 < 18)) %>%
+  mutate(age_binned = case_when(
+    age_2016 <= 29 ~ "18-29",
+    age_2016 >= 30 & age_2016 <= 44 ~ "30-44",
+    age_2016 >= 45 & age_2016 <= 59 ~ "45-59",
+    age_2016 >= 60 ~ "60+"
+  )) %>%
+  mutate(med_inc_binned = case_when(
+    med_household_income <=q25 ~ paste("<", q25),
+    med_household_income > q25 & med_household_income <= q50 ~ paste(q25, "-", q50),
+    med_household_income > q50 & med_household_income <= q75 ~ paste(q50, "-", q75),
+    med_household_income > q75 ~ paste(">", q75)
+  ))
+
+voter_hist_districts_resp$med_inc_binned = factor(voter_hist_districts_resp$med_inc_binned, levels = c("< 46864", "46864 - 52798", "52798 - 64509", "> 64509"))
+
+voter_hist_districts_resp$party_cd = factor(voter_hist_districts_resp$party_cd,
+                                            levels = c("DEM", "REP", "Other"))
+
+voter_grouped = voter_hist_districts_resp %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned) %>%
+  summarise(n = n(), votes = sum(vote_or_not))
+
+voter_grouped %>%
+  arrange(., n)
+```
+
+```{r make-smaller, include = F}
+#saved data with binned age, binned income
+voter_hist_districts_resp  = voter_hist_districts_resp  %>%
+  select(-pct_description)
+# saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp_binned.rds")
+```
+
 # Method
 
-We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman's idea of poststratification (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups. 
+We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups.
 
-The model takes the following form: *add latex?*
+*add some Bayesian justification*
+*add priors (look at sensitivity analysis rmd)*
+
+The model takes the following form: *add latex? check Amy’s slide*
+https://amy-herring.github.io/STA440/decks/glmm_01_deck.html#/section-18
 
 $$
 \begin{aligned}
@@ -84,46 +139,195 @@ logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509) + ...
 \end{aligned}
 $$
 
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. *fit with whole dataset and run 5-cv for the main model*.
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors, interactions and random effect and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. Before fitting any model, we preserved 20% of the full dataset as test data (*or are we doing 5-fold CV*) to quantitatively evaluate the models. 
+*TODO: talk about interactions -- lit review justification*
+
+```{r run-brms-model, cache = T}
+binary_model <-
+  brm(data = voter_grouped, family = binomial,
+      votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
+      iter = 2500, warmup = 500, cores = 2, chains = 2,
+      seed = 10)
+#summary(binary_model)
+#saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
+```
 
 # Results and Interpretations
 
-```{r, read-in-the-model, echo=F, message=F}
-binary_model = readRDS("grouped_model_no_randeff_whole_dataset.rds")
-```
-
+*TO DO: try to make this side by side*
 
 ```{r, coeff-table, echo = F}
 coef_table = round(fixef(binary_model),2)
 colnames(coef_table) = c("Estimate", "Std. Error", "2.5% Quantile", "97.5% Quantile")
 rownames(coef_table) = c("Intercept", "Median Income > 64,509", "Median Income 46,864-52,798", "Median Income 52,798-64,509", "Gender Male", "Gender Unspecified", "Race Black", "Race Other", "Age 30-44", "Age 45-59", "Age 60+", "Party Republican", "Party Other", "Gender Male:Party Republican", "Gender Unspecified:Party Republican", "Gender Male:Party Other", "Gender Unspecified:Party Other", "Race Black:Party Republican", "Race Other:Party Republican",  "Race Black:Party Other", "Race Other:Party Other",  "Gender Male:Age 30-44", "Gender Unspecified:Age 30-44", "Gender Male:Age 45-59", "Gender Unspecified:Age 45-59", "Gender Male:Age 60+", "Gender Unspecified:Age 60+", "Age 30-44:Party Republican", "Age 45-59:Party Republican", "Age 60+:Party Republican", "Age 30-44:Party Other", "Age 45-59:Party Other", "Age 60+:Party Other")
-kable(coef_table)
+kable(coef_table) 
 ```
 
-```{r plot-to-interpret-main, echo = F, fig.height=4, fig.width = 8, message = F, warning = F}
+*TODO: talk about small SE (no identifiability issues!! goodness of fit) and say which are significant (credible interval doesn't contain 0), "other" level is not super informative anyway*
+
+*TODO: label graphs*
+
+```{r plot-to-interpret-main, echo = F, message = F, warning = F, fig.width = 8, fig.height = 4}
 plot(conditional_effects(binary_model, effects = "med_inc_binned"))
+# plot(y~x, xaxt="none", main="Turn off x-axis")
+# prob not x or xlab
 ```
 
 From the plot above, we see that the expected probability of voting is generaly greater that 50% for all median household income levels, but tends to increase as median household income increases, holding all other attributes constant (age, gender, race, party).
 
-```{r plot-to-interpret-interactions1, echo = F, fig.height=4, fig.width = 8, message = F, warning = F}
+```{r plot-to-interpret-interactions1, echo = F, message = F, warning = F, fig.width = 8, fig.height = 4}
 conditions <- data.frame(gender_code = as.character(c("F", "M", "U")))
 plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))))
 ```
 
-We can interpret each point in the plot above as follows: holding median household income level at baseline (less than $46,864) and age at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular race (x-axis), party (color), and gender (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.5, whereas the expected probability that a black, male, Republican votes is greater than 0.5. We can also see that women, regardless of race and party, are expected to be more likely to vote than men.
+We can interpret each point in the plot above as follows: holding median household income at baseline (less than $46,864) and age at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular race (x-axis), party (color), and gender (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.4, whereas the expected probability that a black, male, Republican votes is approximately 0.28. We can also see that women, regardless of race and party, are expected to be more likely to vote than men.
 
-```{r plot-to-interpret-interactions2, echo = F, fig.height=4, fig.width = 8, message = F, warning = F}
+```{r plot-to-interpret-interactions2, echo = F, message = F, warning = F, fig.width = 8, fig.height=4}
 conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
 plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))
 ```
 
-In the plot above, holding median household income level at baseline (less than $46,864) and gender at baseline (female), the expected probability of voting for white Democrats across all age groups is less than that for white Republicans. However, the expected probability of voting for black Democrats across all age groups is higher than that for black Republicans.
+In the plot above, holding median household income at baseline (less than $46,864) and gender at baseline (female), the expected probability of voting for white Democrats across all age groups is less than that for white Republicans. However, the expected probability of voting among black Democrats across all age groups is higher than that among black Republicans.
+
+# Model Validation
+
+```{r k-fold-diff-ks, echo = F, cache = T, warning = F, message = F}
+# Validation & diagnostics start below ------------------------------
+# 3-fold & 5-fold CV
+set.seed(123)
+k3 <- kfold(binary_model, K = 3, save_fits = TRUE)
+k5 <- kfold(binary_model, K = 5, save_fits = TRUE)
+k10 <- kfold(binary_model, K = 10, save_fits = TRUE)
+
+## Slot yrep contains the matrix of predicted responses, 
+## with rows being posterior draws and columns being observations
+## (from documentation) 
+k3_pred <- kfold_predict(k3, method = "fitted")
+k5_pred <- kfold_predict(k5, method = "fitted")
+k10_pred <- kfold_predict(k10, method = "fitted")
+```
+
+```{r rmse, include = F}
+# define a loss function
+# (from documentation kfold_predict)
+rmse <- function(y, yrep) {
+  yrep_mean <- colMeans(yrep)
+  sqrt(mean((yrep_mean - y)^2))
+}
+
+# Print RMSE results
+cat('RMSE with 3-fold CV:', rmse(y = k3_pred$y, yrep = k3_pred$yrep), '\n')
+cat('RMSE with 5-fold CV:', rmse(y = k5_pred$y, yrep = k5_pred$yrep), '\n')
+cat('RMSE with 10-fold CV:', rmse(y = k10_pred$y, yrep = k10_pred$yrep), '\n')
+```
+
+```{r posterior-pred-checks, include = F, fig.width = 10, fig.height = 4}
+# PPC
+pp_check(binary_model) + 
+  xlab("Number voted") + 
+  ylab("Density") + 
+  yaxis_ticks() + 
+  yaxis_text()
+
+d <-
+  voter_grouped %>% 
+  ungroup() %>% 
+  mutate(case = factor(1:nrow(voter_grouped))) # all the different cases (e.g. B race AND R party AND <29 age, etc. essentially each row)
+
+p <-
+  predict(binary_model) %>%
+  as_tibble() %>%
+  bind_cols(d)
+
+ggplot(data = d, aes(x = case, y = votes / n)) +
+  geom_pointrange(data = p,
+                  aes(y    = Estimate / n,
+                      ymin = Q2.5     / n ,
+                      ymax = Q97.5    / n),
+                  color = '#2F4F4F',
+                  shape = 1, alpha = 1/3) + 
+  geom_point(data=d, aes(x=case, y=votes/n))
+
+# # True dots colored by whether it was within the quantile or not
+# temp <- cbind(d, p[,1:4])
+# temp$within <- ((temp$votes)/temp$n >= (temp$Q2.5)/temp$n) & 
+#   ((temp$votes)/temp$n <=( temp$Q97.5)/temp$n)
+# ggplot(data = temp, aes(x = case, y = votes / n)) +
+#   geom_pointrange(data = temp,
+#                   aes(y    = Estimate / n,
+#                       ymin = Q2.5     / n ,
+#                       ymax = Q97.5    / n),
+#                   color = '#2F4F4F',
+#                   shape = 1, alpha = 1/3) + 
+#   geom_point(data=temp, aes(x=case, y=votes/n, color=within))
+```
+
+```{r resids, include= F, fig.width = 8, fig.height = 4}
+# Residuals
+
+voter_grouped %>%
+  add_residual_draws(binary_model) %>%
+  ggplot(aes(x = .row, y = .residual/sqrt(var(.residual)))) +
+  stat_pointinterval() + 
+  geom_hline(yintercept = 0, color="red") + 
+  labs(x = "Group", y = "Standardized Residuals")
+```
+
+Most of the standardized residuals are within +/- 2, but there are some points that have somewhat larger values. This means that for the majority of the groupings, the model predicts fairly well. 
+
+```{r traceplots, echo = F}
+# Traceplots
+
+post <- posterior_samples(binary_model, add_chain = T)
+
+n_to_plot <- 4-1
+for(i in seq(1, ncol(post)-3-n_to_plot, n_to_plot)) {
+  post0 <- post[, c(i:(i+n_to_plot), length(post)-1, length(post))]
+  p <- post0 %>% 
+    #select(-lp__) %>% 
+    gather(key, value, -chain, -iter) %>% 
+    mutate(chain = as.character(chain)) %>% 
+    
+    ggplot(aes(x = iter, y = value, group = chain, color = chain)) +
+    geom_line(size = 1/15) +
+    scale_color_manual(values = c("#80A0C7", "#B1934A", "#A65141", "#EEDA9D")) +
+    scale_x_continuous(NULL, breaks = c(1001, 5000)) +
+    ylab(NULL) +
+    #theme_pearl_earring +
+    theme(legend.position  = c(.825, .06),
+          legend.direction = "horizontal") +
+    facet_wrap(~key, ncol = 2, scales = "free_y")
+  print(p)
+}
+```
+
+# Sensitivity Analysis
+
+```{r warning=FALSE, echo = F}
+binary_model_waic = waic(binary_model)$waic
+binary_model_waic
+#saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
+```
+
+```{r, include = F}
+randeff_model = readRDS("randeff_sa_grouped_model_whole_data_output.rds")
+#summary(randeff_model)
+```
+
+```{r warning=FALSE, echo = F}
+randeff_model_waic = waic(randeff_model)$waic
+randeff_model_waic
+#saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
+```
+
+*TODO: add some sentences*
 
 # Appendix
+
+# Plots
 
 ```{r main-effects-plots, echo = F, fig.height = 5, fig.width = 8, message = F, warning = F}
 main_effects = c("med_inc_binned", "gender_code", "race_code", "age_binned", "party_cd")
@@ -180,6 +384,45 @@ p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gende
 p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+# Sensitivity Analysis
+
+```{r, cache = TRUE}
+priors <- c(set_prior("normal(0,3)", class = "Intercept"),
+            set_prior("normal(0,3)", class = "b"),
+            set_prior("normal(0.5,3)", class = "b", coef = "age_binned30M44"),
+            set_prior("normal(0.75,3)", class = "b", coef = "age_binned45M59"),
+            set_prior("normal(1,3)", class = "b", coef = "age_binned60P"),
+            set_prior("normal(-0.5,3)", class = "b", coef = "gender_codeM" ),
+            set_prior("normal(-0.5,3)", class = "b", coef = "race_codeBlack" ),
+            set_prior("normal(-1,3)", class = "b", coef = "race_codeOther" ),
+            set_prior("normal(-0.5,3)", class = "b", coef = "party_cdOther" ),
+            set_prior("normal(0.5,3)", class = "b", coef = "med_inc_binned46864M52798" ),
+            set_prior("normal(0.5,3)", class = "b", coef = "med_inc_binned52798M64509" ),
+            set_prior("normal(1,3)", class = "b", coef = "med_inc_binned>64509" ))
+
+
+binary_model_newpriors <-
+  brm(data = voter_grouped, family = binomial,
+      votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
+      iter = 2500, warmup = 500, cores = 2, chains = 2,
+      seed = 10,
+      prior=priors)
+summary(binary_model_newpriors)
+#prior_summary(binary_model_newpriors)
+#saveRDS(binary_model_newpriors, "grouped_model_no_randeff_newpriors_whole_dataset.rds")
+```
+
+```{r}
+summary(randeff_model)
+```
+
+
+```{r, cache = T}
+freq_model = glm(cbind(votes, n-votes) ~ med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned, data=voter_grouped, family="binomial")
+summary(freq_model)
+confint(freq_model)
 ```
 
 ## References
