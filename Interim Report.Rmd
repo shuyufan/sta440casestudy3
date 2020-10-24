@@ -147,15 +147,13 @@ logit(Vote_i) = \alpha_0 + \Sigma_{s \in S}\beta_{j}*I(Income_i = Income \ Categ
 \end{aligned}
 $$
 
+where:
 $$
-\begin{aligned}
-where:\\
 S = \{Median \ Income \ $46864-$52798,  \ Median \ Income \ $52798-$64509, \ Median \ Income > $64509\}\\
 G = \{Male, Unspecified\} \\
 R = \{Black, Other\} \\
 A = \{Age 30-44, \ Age 45-59, \ Age 60+\} \\
-P = \{Repiblican, \ Other\}
-\end{aligned}
+P = \{Republican, \ Other\}
 $$
 
 Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3. i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$
@@ -534,9 +532,15 @@ https://www.ncleg.gov/EnactedLegislation/Statutes/PDF/BySection/Chapter_163/GS_1
 17. FairVote.org. (n.d.). Voter Turnout. Retrieved October 22, 2020, from https://www.fairvote.org/voter_turnout
 \newline
 18. McDonald, M. P. (2020). Voter Turnout Demographics. Retrieved October 23, 2020, from http://www.electproject.org/home/voter-turnout/demographics
+\newline
 19. Y. Ghitza, A. Gelman’s (2013). Deep interactions with MRP: Election Turnout and Voting Patterns Among Small Electoral Subgroups. American Journal of Political Science 57 762– 776.
+\newline
 20. Walker, H.L., Herron, M.C. & Smith, D.A. Early Voting Changes and Voter Turnout: North Carolina in the 2016 General Election. Polit Behav 41, 841–869 (2019). https://doi-org.proxy.lib.duke.edu/10.1007/s11109-018-9473-5 
+\newline
 21. Pew Research Center (2020). Men and women in the U.S. continue to differ in voter turnout rate, party identification. https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/ 
-22. Pew Research Center (2016). Party affiliation among voters: 1992-2016. https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters-1992-2016/ 
+\newline
+22. Pew Research Center (2016). Party affiliation among voters: 1992-2016.
+https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters-1992-2016/ 
+\newline
 23. J. Misra (2019). Voter Turnout Rates Among All Voting Age and Major Racial and Ethnic Groups Were Higher Than in 2014. https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/
 
