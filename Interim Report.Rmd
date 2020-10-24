@@ -204,7 +204,7 @@ cat(c("\\begin{table}[!htb]
 ))  
 ```
 
-\emph{Table 1} and \emph{Table 2} show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model.
+\emph{Table 1} and \emph{Table 2} show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model. The intercept can be interpreted as follows: For a white, female Democrat aged 18-29 whose median household income is in the lowest category (< $46k), the odds of voting is `r exp(0)` with a 95% CI of (`r exp(-0.1)`, `r exp(0)`). For a white, female Democract aged 18-29 whose median household income is in the second quartile, the odds of voting is `r exp(0.1)` with a 95% CI of (`r exp(0.09)`, `r exp(0.10)`). We can interpret the effect of gender as follows: Holding median household income, race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r exp(-0.43)` times that among women with a 95% CI of (`r exp(-0.44)`, `r exp(-0.42)`). We can also note that, holding median household income and age at baseline, the odds of voting among black Republican men is `r exp(-0.43+0.18-0.98)` times that among black Republican women with a 95% CI of (`r exp(-0.44+0.17-1)`, `r exp(-0.42+0.19-0.96)`.  
 
 *TODO: Add interpretations 10am*
 
@@ -212,17 +212,17 @@ cat(c("\\begin{table}[!htb]
 <!-- # plot(conditional_effects(binary_model, effects = "med_inc_binned")) -->
 <!-- # ``` -->
 
-```{r plot-to-interpret-main-test, eval = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"}
-p1 = plot(conditional_effects(binary_model, effects = "med_inc_binned"), plot=FALSE)[[1]]
-# p1$labels$fill <- "Median Household Income"
-# p1$labels$colour <- “Horizontal\ndifference”
-p1 <- p1 + labs(x = "Median Household Income", y = "Fitted Probabilities")
-p1 <- p1 +
-theme(axis.text=element_text(size=8), axis.title=element_text(size=14))#, #legend.text=element_text(size=12), legend.title = element_text(size = 12))
-print(p1)
-# plot(y~x, xaxt="none", main="Turn off x-axis")
-# prob not x or xlab
-```
+<!-- # ```{r plot-to-interpret-main-test, eval = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"} -->
+<!-- # p1 = plot(conditional_effects(binary_model, effects = "med_inc_binned"), plot=FALSE)[[1]] -->
+<!-- # # p1$labels$fill <- "Median Household Income" -->
+<!-- # # p1$labels$colour <- “Horizontal\ndifference” -->
+<!-- # p1 <- p1 + labs(x = "Median Household Income", y = "Fitted Probabilities") -->
+<!-- # p1 <- p1 + -->
+<!-- # theme(axis.text=element_text(size=8), axis.title=element_text(size=14))#, #legend.text=element_text(size=12), legend.title = element_text(size = 12)) -->
+<!-- # print(p1) -->
+<!-- # # plot(y~x, xaxt="none", main="Turn off x-axis") -->
+<!-- # # prob not x or xlab -->
+<!-- # ``` -->
 
 <!-- From \emph{Figure 2}, we see that the expected probability of voting is generaly greater that 50% for all median household income levels, but tends to increase as median household income increases, holding all other attributes constant (age, gender, race, party). -->
 
