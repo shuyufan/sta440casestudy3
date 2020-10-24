@@ -157,14 +157,22 @@ P = \{Republican, \ Other\}
 \end{aligned}
 $$
 
+<<<<<<< HEAD
 The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
+=======
+The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-30` for age, and `Democrat` for party affiliation. 
+>>>>>>> 9b7fb24e0b6db5ad885a81ca6185016e1e50299c
 
 Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3. i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$
 
 In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
+<<<<<<< HEAD
 
 ```{r run-brms-model, cache = T, include = F, warning = F, message = F}
+=======
+```{r run-brms-model, cache = T}
+>>>>>>> 9b7fb24e0b6db5ad885a81ca6185016e1e50299c
 binary_model <-
   brm(data = voter_grouped, family = binomial,
       votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
