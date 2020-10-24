@@ -516,10 +516,6 @@ p5 = as.grob(plot(conditional_effects(binary_model, effects = main_effects[5]), 
 grid.arrange(grobs = list(p1, p2, p3, p4, p5), ncol = 2)
 ```
 
-
-*TODO: Tomorrow morning, Cathy+Justina*
-*will need to take out "expression"*
-
 ```{r interactions-plot1, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
 p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
@@ -607,7 +603,7 @@ p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party
 
 p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
 
 p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
@@ -615,7 +611,7 @@ p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_
 
 p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
