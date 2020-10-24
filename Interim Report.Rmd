@@ -235,9 +235,6 @@ cat(c("\\begin{table}[!htb]
 ```
 
 Table 1 and Table 2 show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between `gender` and `party` for the other levels are significant, so we still include this interaction in the model. The intercept can be interpreted as follows: For a white, female Democrat aged 18-29 whose median household income is in the lowest category (< $46k), the odds of voting is `r exp(0)` with a 95% CI of (`r exp(-0.1)`, `r exp(0)`). For a white, female Democract aged 18-29 whose median household income is in the second quartile, the odds of voting is `r exp(0.1)` with a 95% CI of (`r exp(0.09)`, `r exp(0.10)`). We can interpret the effect of gender as follows: Holding median household income, race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r exp(-0.43)` times that among women with a 95% CI of (`r exp(-0.44)`, `r exp(-0.42)`). We can also note that, holding median household income and age at baseline, the odds of voting among black Republican men is `r exp(-0.43+0.18-0.98)` times that among black Republican women with a 95% CI of (`r exp(-0.44+0.17-1)`, `r exp(-0.42+0.19-0.96)`.  
-
-*TODO: Add interpretations 10am*
-
 <!-- # ```{r plot-to-interpret-main, echo = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"} -->
 <!-- # plot(conditional_effects(binary_model, effects = "med_inc_binned")) -->
 <!-- # ``` -->
@@ -485,15 +482,16 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 
 ## Additional EDA
 
-```{r, eval = F}
+```{r, echo = F, fig.width = 8, fid.height = 4}
 binned_income <- ggplot(voter_grouped, aes(x = med_inc_binned, y = voterpercent)) + geom_bar(stat = "identity") + labs(aes(fill = party_cd), y="Turnout Percentage", x = "County Median Household Income", title = "Voter Turnout for Different \n Median Household Income and Party Affliation") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-density_age_party <- ggplot(voter_hist_districts_resp, aes(birth_age,color=party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
-stacked_race_party <- ggplot(voter_hist_districts_resp, aes(race_code,fill=party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
-box_age_race <- ggplot(voter_hist_districts_resp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
-binned_income
-density_age_party
-stacked_race_party
-box_age_race
+density_age_party <- ggplot(voter_hist_districts_resp, aes(birth_age,color=party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
+stacked_race_party <- ggplot(voter_hist_districts_resp, aes(race_code,fill=party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+box_age_race <- ggplot(voter_hist_districts_resp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races")  +theme(plot.title = element_text(hjust = 0.5)) 
+# binned_income
+# density_age_party
+# stacked_race_party
+# box_age_race
+grid.arrange(binned_income,density_age_party,stacked_race_party,box_age_race, nrow = 2)
 ```
 
 ## Plots
