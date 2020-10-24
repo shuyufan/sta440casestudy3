@@ -38,17 +38,13 @@ pkgTest("coda")
 pkgTest("dplyr")
 pkgTest("reshape2")
 pkgTest("readr")
-pkgTest("rjags")
-pkgTest("R2jags")
 pkgTest("grid")
 pkgTest("bayesplot")
-pkgTest("rstanarm")
 pkgTest("knitr")
 pkgTest("tidyverse")
 pkgTest("stringr")
 pkgTest("stringi")
 pkgTest("ggplotify")
-pkgTest("brms")
 pkgTest("tidybayes") # easy residuals
 ```
 
