@@ -3,11 +3,14 @@ title: "Interim Report: Who Votes in NC?"
 author: "Alexander Bendeck, Lynn Fan, Cathy Lee, Alice Liao, Justina Zou"
 date: "20 October 2020"
 fontsize: 11pt
+geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
 output: 
   pdf_document: 
   latex_engine: xelatex
   fig_width: 2
   fig_height: 1
+header-includes:
+- \usepackage{booktabs}
 ---
 
 ```{r setup, include=FALSE}
@@ -35,6 +38,7 @@ library(grid)
 library(ggplotify)
 library(brms)
 library(tidybayes) # easy residuals
+library(xtable)
 ```
 
 # Introduction
@@ -124,23 +128,37 @@ After cleaning up data set and grouping demographic factors for analysis, \emph{
 
 # Method
 
-We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. To model the binary outcome (vote vs not vote), we will first fit a simple logistic regression model with selected variables as a baseline for comparison. Then motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. With poststratification we can get average estimates for each of the subgroups.
+We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. Motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. We will then be able to get average estimates for each of the subgroups from the posterior distributions. Bayesian viewpoint is an intuitive way of incorporating data to update the estimates and this method allows us to quantify the uncertainty about the model. *Can't think of more justification for Bayesian*
 
-*add some Bayesian justification*
-*add priors (look at sensitivity analysis rmd)*
+From Exploratory Data Analysis and literature, we identify voters' income (binned), gender, race, age (binned) and party affiliation as potentially useful predictors in predicting voter turnout. Furthermore, literature suggests possible interations between some variables. Pew Research highlighted that historically party identification differs widely by gender (2020) and age (2016), J. Misra (2019) found while younger women voted at higher rates than younger men, women age 65 and older voted at lower rates than men in the same age range, Walker et al (2019) found there are differential impacts across race and party subgroups on turnout especially in North Carolina's due to its status as a swing state. 
 
-The model takes the following form: *add latex? check Amy’s slide*
-https://amy-herring.github.io/STA440/decks/glmm_01_deck.html#/section-18
+We propose a model with the folloing form: 
 
 $$
 \begin{aligned}
-logit(Vote) = \beta_0 + \beta_1I(Median \ Income \ >64,509) + ...
+logit(Vote_i) = \alpha_0 + \Sigma_{s \in S}\beta_{j}*I(Income_i = Income \ Categoty_s) + \Sigma_{g \in G}\beta_g*I(Gender_i = Gender \ Category_g) +\\
+\Sigma_{r \in R}\beta_r*I(Race_i = Race \ Category_r) + \Sigma_{a \in A}\beta_a*I(Age_i = Age \ Category_a) +\\
+\Sigma_{p \in P}\beta_p*I(Party_i = Party \ Category_p) + \\
+\Sigma_{g \in G, p \in P}\beta_{gp}*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
+\Sigma_{r \in R, p \in P}\beta_{rp}*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
+\Sigma_{g \in G, a \in A}\beta_{ga}*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
+\Sigma_{p \in P, a \in A}\beta_{pa}*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
 \end{aligned}
 $$
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. *fit with whole dataset and run 5-cv for the main model*.
+where:
+$$
+S = \{Median \ Income \ $46864-$52798,  \ Median \ Income \ $52798-$64509, \ Median \ Income > $64509\}\\
+G = \{Male, Unspecified\} \\
+R = \{Black, Other\} \\
+A = \{Age 30-44, \ Age 45-59, \ Age 60+\} \\
+P = \{Republican, \ Other\}
+$$
 
-*TODO: talk about interactions -- lit review justification*
+Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3. i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$
+
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
+
 
 ```{r run-brms-model, cache = T}
 binary_model <-
@@ -156,14 +174,36 @@ binary_model <-
 
 *TO DO: try to make this side by side*
 
-```{r, coeff-table, echo = F}
-coef_table = round(fixef(binary_model),2)
-colnames(coef_table) = c("Estimate", "Std. Error", "2.5% Quantile", "97.5% Quantile")
-rownames(coef_table) = c("Intercept", "Median Income > 64,509", "Median Income 46,864-52,798", "Median Income 52,798-64,509", "Gender Male", "Gender Unspecified", "Race Black", "Race Other", "Age 30-44", "Age 45-59", "Age 60+", "Party Republican", "Party Other", "Gender Male:Party Republican", "Gender Unspecified:Party Republican", "Gender Male:Party Other", "Gender Unspecified:Party Other", "Race Black:Party Republican", "Race Other:Party Republican",  "Race Black:Party Other", "Race Other:Party Other",  "Gender Male:Age 30-44", "Gender Unspecified:Age 30-44", "Gender Male:Age 45-59", "Gender Unspecified:Age 45-59", "Gender Male:Age 60+", "Gender Unspecified:Age 60+", "Age 30-44:Party Republican", "Age 45-59:Party Republican", "Age 60+:Party Republican", "Age 30-44:Party Other", "Age 45-59:Party Other", "Age 60+:Party Other")
-kable(coef_table) 
+```{r, coeff-table, include = F}
+coef_table1 = round(fixef(binary_model),2)[1:17,]
+colnames(coef_table1) = c("Est", "SE", "2.5% Q", "97.5% Q")
+rownames(coef_table1) = c("Intercept", "46.9k-52.8k", "52.8k-64.5k", ">64.6k", "Male", "Unspecified", "Black", "Other Race", "30-44", "45-59", "60+", "Republican", "Other Party","Male:Rep", "Unspec:Rep", "Male:Other Pty", "Unspec:Other Pty") 
+
+coef_table2 = round(fixef(binary_model),2)[18:33,]
+colnames(coef_table2) = c("Est", "SE", "2.5% Q", "97.5% Q")
+rownames(coef_table2) = c("Black:Rep", "Other Race:Rep",  "Black:Other Pty", "Other Race:Other Pty",  "Male:30-44", "Unspec:30-44", "Male:45-59", "Unspec:45-59", "Male:60+", "Unspec:60+", "30-44:Rep", "45-59:Rep", "60+:Rep", "30-44:Other Pty", "45-59:Other Pty", "60+:Other Pty")
 ```
 
-*TODO: talk about small SE (no identifiability issues!! goodness of fit) and say which are significant (credible interval doesn't contain 0), "other" level is not super informative anyway*
+```{r sample, echo=FALSE, results='asis'}
+t1 <- kable(coef_table1, format = "latex", booktabs = TRUE)
+t2 <- kable(coef_table2, format = "latex", booktabs = TRUE)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Coefficient Table Part 1}
+      \\centering",
+        t1,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\centering
+        \\caption{Coefficient Table Part 2}",
+        t2,
+    "\\end{minipage} 
+\\end{table}"
+))  
+```
+
+The table above shows that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model
 
 *TODO: label graphs*
 
@@ -208,6 +248,8 @@ k3_pred <- kfold_predict(k3, method = "fitted")
 k5_pred <- kfold_predict(k5, method = "fitted")
 k10_pred <- kfold_predict(k10, method = "fitted")
 ```
+
+*TODO: Interpret! (see response in google doc) and add external validation*
 
 ```{r rmse, include = F}
 # define a loss function
@@ -322,7 +364,7 @@ randeff_model_waic
 #saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
 ```
 
-*TODO: add some sentences*
+*TODO: add some sentences, look at the posterior distribution of the variance of the random effect (see how close it is to 0--if close to 0 then don't need it)*
 
 # Appendix
 
@@ -382,6 +424,32 @@ p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gende
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
 p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+```{r, interactions-plot-4, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
+conditions <- data.frame(age_binned = as.character(c("18-29", "30-44", "45-59", "60+")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+```{r, interactions-plot-5, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
+conditions <- data.frame(med_inc_binned = as.character(c("< 46864", "46864 - 52798", "52798 - 64509", "> 64509")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
@@ -466,6 +534,7 @@ https://www.ncleg.gov/EnactedLegislation/Statutes/PDF/BySection/Chapter_163/GS_1
 \newline
 18. McDonald, M. P. (2020). Voter Turnout Demographics. Retrieved October 23, 2020, from http://www.electproject.org/home/voter-turnout/demographics
 
+
 ## Additional EDA
 
 ```{r, eval = F}
@@ -478,3 +547,16 @@ density_age_party
 stacked_race_party
 box_age_race
 ```
+=======
+\newline
+19. Y. Ghitza, A. Gelman’s (2013). Deep interactions with MRP: Election Turnout and Voting Patterns Among Small Electoral Subgroups. American Journal of Political Science 57 762– 776.
+\newline
+20. Walker, H.L., Herron, M.C. & Smith, D.A. Early Voting Changes and Voter Turnout: North Carolina in the 2016 General Election. Polit Behav 41, 841–869 (2019). https://doi-org.proxy.lib.duke.edu/10.1007/s11109-018-9473-5 
+\newline
+21. Pew Research Center (2020). Men and women in the U.S. continue to differ in voter turnout rate, party identification. https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/ 
+\newline
+22. Pew Research Center (2016). Party affiliation among voters: 1992-2016.
+https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters-1992-2016/ 
+\newline
+23. J. Misra (2019). Voter Turnout Rates Among All Voting Age and Major Racial and Ethnic Groups Were Higher Than in 2014. https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/
+
