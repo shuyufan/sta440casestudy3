@@ -159,7 +159,7 @@ $$
 
 The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
-Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3. i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$
+Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3 for the $\alpha$ intercept (i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$).
 
 In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
