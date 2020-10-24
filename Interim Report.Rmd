@@ -241,11 +241,6 @@ Table 1 and Table 2 show that each coefficient has small standard errors (no ind
 - Holding median household income (< $\$46.9k$), race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r round(exp(-0.43),2)` times that among women with a 95% CI of (`r round(exp(-0.44),2)`, `r round(exp(-0.42),2)`). We can also note that, holding median household income and age at baseline, the odds of voting among black Republican men is `r round(exp(-0.43+0.18-0.98),2)` times that among black Republican women with a 95% CI of (`r round(exp(-0.44+0.17-1),2)`, `r round(exp(-0.42+0.19-0.96),2)`. *not sure if we can just sum up the CI?* 
 - For white, female Democrat voters with median household income less than $\$46.9k$, the odds of voting among those aged 30-44 would be `r round(exp(0.62),2)` times higher than among those aged 18-29 with 95% CI of (`r round(exp(0.61),2)`, `r round(exp(0.63),2)`). In fact, if we hold all other variables at baseline, the odds of voting is the lowest in the lowest age group. The odds of voting among older (aged 60+) Republican white male voters with median income less than $\$46.9k$ is `r round(exp(0.94+0.19-0.43+0.18+0.25-0.06),2)` times more likely than the odds of voting among voters with all baseline democraphic characteristics.
 
->>>>>>> a549de604ec0711dbc357850585f9e23cba65ce9
-<!-- # ```{r plot-to-interpret-main, echo = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"} -->
-<!-- # plot(conditional_effects(binary_model, effects = "med_inc_binned")) -->
-<!-- # ``` -->
-
 <!-- # ```{r plot-to-interpret-main-test, eval = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"} -->
 <!-- # p1 = plot(conditional_effects(binary_model, effects = "med_inc_binned"), plot=FALSE)[[1]] -->
 <!-- # # p1$labels$fill <- "Median Household Income" -->
@@ -264,6 +259,8 @@ Table 1 and Table 2 show that each coefficient has small standard errors (no ind
 conditions <- data.frame(gender_code = as.character(c("F", "M", "U")))
 p2 = plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]]
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
 
 p2 <- p2 + labs(x = "Race", y = "Fitted Probabilities")
 p2 <- p2 +
@@ -275,11 +272,13 @@ theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
 conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
 p3 = plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))), plot=FALSE)[[1]]
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
 
 p3 <- p3 + labs(x = "Party", y = "Fitted Probabilities")
 p3 <- p3 +
 theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
-#print(p3)
+# print(p3)
 ```
 
 ```{r, echo = F, message = F, warning = F, fig.width = 10, fig.height=4, fig.cap = "\\label{bothinterp} Marginal Effect of Party by Age and Race"}
@@ -523,100 +522,161 @@ grid.arrange(grobs = list(p1, p2, p3, p4, p5), ncol = 2)
 
 ```{r interactions-plot1, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
 
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
      
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
      
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-2, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(party_cd = as.character(c("DEM", "REP", "Other")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
      
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
      
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
      
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
      
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-3, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
      
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
      
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-4, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(age_binned = as.character(c("18-29", "30-44", "45-59", "60+")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-       plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+       plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
 
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
 
-p4 = as.grob(plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
 
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-5, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(med_inc_binned = as.character(c("< 46864", "46864 - 52798", "52798 - 64509", "> 64509")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
 
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
 
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
