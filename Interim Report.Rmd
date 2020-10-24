@@ -184,7 +184,7 @@ rownames(coef_table1) = c("Intercept", "46.9k-52.8k", "52.8k-64.5k", ">64.6k", "
 
 coef_table2 = round(fixef(binary_model),2)[18:33,]
 colnames(coef_table2) = c("Est", "SE", "2.5% Q", "97.5% Q")
-rownames(coef_table2) = c("Black:Rep", "Other:Rep",  "Black:Other Pty", "Other Race:Other Pty",  "Male:30-44", "Unspec:30-44", "Male:45-59", "Unspec:45-59", "Male:60+", "Unspec:60+", "30-44:Rep", "45-59:Rep", "60+:Rep", "30-44:Other Pty", "45-59:Other Pty", "60+:Other Pty")
+rownames(coef_table2) = c("Black:Rep", "Other Race:Rep",  "Black:Other Pty", "Other Race:Other Pty",  "Male:30-44", "Unspec:30-44", "Male:45-59", "Unspec:45-59", "Male:60+", "Unspec:60+", "30-44:Rep", "45-59:Rep", "60+:Rep", "30-44:Other Pty", "45-59:Other Pty", "60+:Other Pty")
 ```
 
 ```{r sample, echo=FALSE, results='asis'}
@@ -206,7 +206,7 @@ cat(c("\\begin{table}[!htb]
 ))  
 ```
 
-The table above shows that each coefficient has small standard errors (no indicatin of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model
+The table above shows that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model
 
 *TODO: label graphs*
 
@@ -427,6 +427,32 @@ p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gende
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
 p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+```{r, interactions-plot-4, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
+conditions <- data.frame(age_binned = as.character(c("18-29", "30-44", "45-59", "60+")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+"))))))
+grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
+```
+
+```{r, interactions-plot-5, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
+conditions <- data.frame(med_inc_binned = as.character(c("< 46864", "46864 - 52798", "52798 - 64509", "> 64509")))
+p1 = as.grob(expression(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
+p2 = as.grob(expression(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
+p3 = as.grob(expression(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
+p4 = as.grob(expression(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509"))))))
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
