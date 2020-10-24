@@ -17,6 +17,37 @@ header-includes:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r pkgtest, echo=FALSE}
+# source: https://stackoverflow.com/questions/9341635/check-for-installed-packages-before-running-install-packages
+pkgTest <- function(x)
+  {
+    if (!require(x,character.only = TRUE))
+    {
+      install.packages(x,repos = "http://cran.r-project.org",dep=TRUE)
+        if(!require(x,character.only = TRUE)) stop("Package not found")
+    }
+  }
+```
+
+```{r check package,include=FALSE}
+pkgTest("gtable") 
+pkgTest("ggplot2") 
+pkgTest("gridExtra") 
+pkgTest("xtable") 
+pkgTest("coda") 
+pkgTest("dplyr")
+pkgTest("reshape2")
+pkgTest("readr")
+pkgTest("grid")
+pkgTest("bayesplot")
+pkgTest("knitr")
+pkgTest("tidyverse")
+pkgTest("stringr")
+pkgTest("stringi")
+pkgTest("ggplotify")
+pkgTest("tidybayes") # easy residuals
+```
+
 ```{r packages, include=FALSE, message = F}
 library(gtable)
 library(ggplot2)
@@ -34,7 +65,6 @@ library(knitr)
 library(tidyverse)
 library(stringr)
 library(stringi)
-library(grid)
 library(ggplotify)
 library(brms)
 library(tidybayes) # easy residuals
@@ -43,7 +73,7 @@ library(xtable)
 
 # Introduction
 
-The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the congressional election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in a number of ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence about this theory (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both congressional elections and presidential races. For example, gender, race and party registration could help profile voting patterns for congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
+The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the congressional election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in several ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence about this theory (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both congressional elections and presidential races. For example, gender, race and party registration could help profile voting patterns for congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
 \newline
 Among all states, North Carolina has been as a swing state in presidential and congressional elections for decades. In 2008, Obama won the state narrowly, but lost it narrowly after 4 years in 2012. Since 1996, the Republican statewide vote share in congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014 (Perrin et al.)." It makes North Carolina an interesting battleground in which voter demographic changes could potentially lead to significant implications of election outcomes and "an excellent site for those interested in partisan voting trends (Perrin et al.)." This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.
 
@@ -53,7 +83,7 @@ We are using public data provided by the NC State Board of Elections, which can 
 \newline
 From the ncvhis files, we only kept the voters that voted for the 2016 general election for our analysis. Among 8,522,310 data points showing voters that voted either for the 2016 general election or the 2018 midterm election, we kept the 4,768,188 voter records for 2016. Studies have shown that presidential elections help mobilize voters, so voter turnout in presidential election years are significantly higher. In recent elections, voter turnout during presidential election years is around 60%, and only about 40% during midterm elections (FairVote.org). For North Carolina, voter turnout data in 2018 is also inappropriate to use because neither of North Carolina’s U.S. senators nor the governor was up for reelection, further demotivated voters (Perrin et al.). From the ncvoter files, we filtered demographic factors that are supported by existing literature to be significant in understanding voting patterns, including gender, race, party registration, and age (Kim et al.). We also have their county and congressional district information available. 
 \newline
-Additionally, we found relevant literature proving the relationship between voter turnout and wage (Charles et al.), so we found county-level median household income data from Economic Research Service under United States Department of Agriculture (https://www.ers.usda.gov/data-products/county-level-data-sets)
+Additionally, we found relevant literature proving the relationship between voter turnout and wage (Charles et al.), so we added county-level median household income data from Economic Research Service under United States Department of Agriculture to our data set for analysis (https://www.ers.usda.gov/data-products/county-level-data-sets).
 
 ## Data Munging
 After binding ncvhis files and ncvoter files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those 4,389 data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. We imputed the missing districts by matching the voter's registered county with congressional district. We removed the 4\% of voters who reside in counties that span across more than one county. Because ncvoter files show the voter registration data in 2020 while we are looking into voter turnout in 2016, it is important to treat those voters who were not eligible to vote in 2016. We subtract all voters' age by 4 years old to get the age information back in 2016, and then filtered out those 460,847 voters younger than 18 as they were unable to vote. We understand that doing so might introduce potential bias to the data set as the population 18-22 years old in 2020 might have different voting preferences than those 18-22 years old in 2016, but we believe the similarity of elections in 2016 and 2020 makes them comparable. Our **numerator** in voter turnout analysis is those who voted for the 2016 general election stored in ncvhis files, and our **denominator** is those registered voters in the ncvoter files that were eligible to vote back in 2016.
@@ -124,7 +154,7 @@ binned_age_party <- ggplot(voter_grouped, aes(x = party_cd, y = voterpercent)) +
 grid.arrange(grobs = list(binned_race_party, binned_gender_party, binned_age_gender, binned_age_party), ncol = 2)
 ```
 
-After cleaning up data set and grouping demographic factors for analysis, \emph{Figure 1} aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range, which are named as `party_cd`, `gender_code` and `age_binned`, respectively. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. In the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
+After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range, which are named as `party_cd`, `gender_code` and `age_binned`, respectively. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. In the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
 
 # Method
 
@@ -132,7 +162,7 @@ We will take a Bayesian approach to not only predict if a voter with a certain p
 
 From Exploratory Data Analysis and literature, we identify voters' income (binned), gender, race, age (binned) and party affiliation as potentially useful predictors in predicting voter turnout. Furthermore, literature suggests possible interations between some variables. Pew Research highlighted that historically party identification differs widely by gender (2020) and age (2016), J. Misra (2019) found while younger women voted at higher rates than younger men, women age 65 and older voted at lower rates than men in the same age range, Walker et al (2019) found there are differential impacts across race and party subgroups on turnout especially in North Carolina's due to its status as a swing state. 
 
-We propose a model with the folloing form: 
+We propose a model with the following equation: 
 
 $$
 \begin{aligned}
@@ -159,9 +189,9 @@ $$
 
 The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
-Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3. i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$
+Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3 for the $\alpha$ intercept (i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$).
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way we hope to assess if the Bayesian framework is superior than a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way, we hope to assess if the Bayesian framework is superior to a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
 ```{r run-brms-model, cache = T, include = F, warning = F, message = F}
 binary_model <-
@@ -204,7 +234,7 @@ cat(c("\\begin{table}[!htb]
 ))  
 ```
 
-\emph{Table 1} and \emph{Table 2} show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model. The intercept can be interpreted as follows: For a white, female Democrat aged 18-29 whose median household income is in the lowest category (< $46k), the odds of voting is `r exp(0)` with a 95% CI of (`r exp(-0.1)`, `r exp(0)`). For a white, female Democract aged 18-29 whose median household income is in the second quartile, the odds of voting is `r exp(0.1)` with a 95% CI of (`r exp(0.09)`, `r exp(0.10)`). We can interpret the effect of gender as follows: Holding median household income, race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r exp(-0.43)` times that among women with a 95% CI of (`r exp(-0.44)`, `r exp(-0.42)`). We can also note that, holding median household income and age at baseline, the odds of voting among black Republican men is `r exp(-0.43+0.18-0.98)` times that among black Republican women with a 95% CI of (`r exp(-0.44+0.17-1)`, `r exp(-0.42+0.19-0.96)`.  
+Table 1 and Table 2 show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between `gender` and `party` for the other levels are significant, so we still include this interaction in the model. The intercept can be interpreted as follows: For a white, female Democrat aged 18-29 whose median household income is in the lowest category (< $46k), the odds of voting is `r exp(0)` with a 95% CI of (`r exp(-0.1)`, `r exp(0)`). For a white, female Democract aged 18-29 whose median household income is in the second quartile, the odds of voting is `r exp(0.1)` with a 95% CI of (`r exp(0.09)`, `r exp(0.10)`). We can interpret the effect of gender as follows: Holding median household income, race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r exp(-0.43)` times that among women with a 95% CI of (`r exp(-0.44)`, `r exp(-0.42)`). We can also note that, holding median household income and age at baseline, the odds of voting among black Republican men is `r exp(-0.43+0.18-0.98)` times that among black Republican women with a 95% CI of (`r exp(-0.44+0.17-1)`, `r exp(-0.42+0.19-0.96)`.  
 
 *TODO: Add interpretations 10am*
 
@@ -252,7 +282,7 @@ theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
 grid.arrange(p2,p3, nrow = 1)
 ```
 
-We can interpret each point in Figure \ref{bothinterp} as follows: holding median household income at baseline (less than $\$46,864$) and age at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular race (x-axis), party (color), and gender (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.4, whereas the expected probability that a black, male, Republican votes is approximately 0.28. We can also see that women, regardless of race and party, are expected to be more likely to vote than men. The plot on the right in Figure \ref{bothinterp} shows that, holding median household income at baseline (less than $\$46,864$) and gender at baseline (female), the expected probability of voting for white Democrats across all age groups is less than that for white Republicans. However, the expected probability of voting among black Democrats across all age groups is higher than that among black Republicans.
+We can interpret each point in Figure \ref{bothinterp} as follows: holding `median household income` at baseline (less than $\$46,864$) and `age` at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular `race` (x-axis), `party` (color), and `gender` (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.4, whereas the expected probability that a black, male, Republican votes is approximately 0.28. We can also see that women, regardless of `race` and `party`, are expected to be more likely to vote than men. The plot on the right in Figure \ref{bothinterp} shows that, holding `median household income` at baseline (less than $\$46,864$) and `gender` at baseline (female), the expected probability of voting for white Democrats across all age groups is less than that for white Republicans. However, the expected probability of voting among black Democrats across all age groups is higher than that among black Republicans.
 
 # Model Validation
 
@@ -330,7 +360,7 @@ grid.arrange(ppc, dot, ncol = 2)
 #   geom_point(data=temp, aes(x=case, y=votes/n, color=within))
 ```
 
-Figure \ref{ppc} displays the posterior predictive checks for our model. The plots show that our simulated distribution is similar to the observed distribution. Our simulations also produces few outliers. It appears that the true values are covered by the 95% confidence intervals of the predicted values, indicating model fit.
+Figure \ref{ppc} displays the posterior predictive checks for our model. The plots show that our simulated distribution is similar to the observed distribution. Our simulations also produce few outliers. It appears that the true values are covered by the 95% confidence intervals of the predicted values, indicating model fit.
 
 ```{r resids, echo = F, fig.width = 8, fig.height = 4}
 # Residuals
@@ -342,7 +372,7 @@ voter_grouped %>%
   labs(x = "Group", y = "Standardized Residuals")
 ```
 
-Most of the standardized residuals are within +/- 2, but there are some points that have somewhat larger values. This means that for the majority of the groupings, the model predicts fairly well. 
+Most of the standardized residuals are within $\pm$ 2, but some points have somewhat larger values. This means that for the majority of the groupings, the model predicts fairly well. 
 
 ```{r external-validation, fig.width = 8, fig.height = 4, echo = F, message = F, warning = F}
 grouped_voters_2012 = readRDS("grouped_voter_data_2012.rds")
@@ -379,20 +409,19 @@ randeff_model_aic = randeff_model_waic_obj$estimates[3,1]
 #saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
 ```
 
-As part of our sensitivity analysis, we fit a model with identical predictor variables to our main model but with different priors. Based on literature review, we chose normal priors for the main effects that aligned with expectations that older voters tend to vote more often (McDonald, 2020), men tend to vote less often than women (Igielnik, 2020), party-unaffiliated voters tend to turn out less often (Killian, 2012), and wealth tends to correlate positively with turnout (Akee, 2019). For these main effects, we chose the normal priors to have means somewhere between 0.5 and 1, and we chose a variance of 3. For all other terms (including interactions and intercept), we chose normal priors with mean of 0 and variance of 3. Changing these priors had essentially no effect on the resulting coefficients or confidence intervals (see model output in Appendix).
+As part of our sensitivity analysis, we fit a model with identical predictor variables to our main model but with different priors. Based on literature review, we chose normal priors for the main effects that aligned with expectations that older voters tend to vote more often (McDonald, 2020), men tend to vote less often than women (Igielnik, 2020), party-unaffiliated voters tend to vote less often (Killian, 2012), and wealth tends to correlate positively with voter turnout (Akee, 2019). For these main effects, we chose the normal priors to have means somewhere between 0.5 and 1, and we chose a variance of 3. For all other terms (including interactions and intercept), we chose normal priors with a mean of 0 and a variance of 3. Changing these priors had no significant effect on the resulting coefficients or confidence intervals (see model output in Appendix).
 
-We also fit another model with a random intercept for congressional district to capture variation between voters in different geographic parts of North Carolina. The coefficients (included in the Appendix, along with group-level s.d.) look largely the same compared to the main model, with the exception that the coefficients for income are a bit smaller. This is perhaps because some of the variation between different income groups can actually be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(randeff_model_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`).
+We also fit another model with a random intercept for congressional districts to capture variation between voters in different geographic parts of North Carolina. The coefficients (included in the Appendix, along with group-level s.d.) look largely the same compared to the main model, with the exception that the coefficients for income are a bit smaller. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(randeff_model_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`).
 
 Finally, since all of the models discussed above were fit using a Bayesian framework via the \texttt{brms} package, we decided to fit a frequentist model for comparison. The model output (included in the Appendix) shows little difference from the results of our main Bayesian model.
 
 # Conclusion and Limitations
 
-We fit a Bayesian logistic regression model to model the binary outcome of whether or not a demographic subgroup, defined by their race, gender, party affiliation, age, and median household income (such as white Female Democrats between 30-44 years of age whose median household income is greater than $64,509) votes. Based on results from literature review, we added interactions between gender and party, race and party, age and gender, age and party
-no random effect to our model. MCMC diagnostics and model diagnostics do not indicate lack of fit. 
+We fit a Bayesian logistic regression model to model the binary outcome of whether or not a demographic subgroup, defined by their race, gender, party affiliation, age, and median household income (such as white Female Democrats between 30-44 years of age whose median household income is greater than $64,509) votes. Based on results from literature review, we added interactions between gender and party, race and party, age and gender, and age and party. After model comparisons, we did not include random effect in our model. Our MCMC diagnostics and model diagnostics do not indicate a lack of fit and show that our model coefficients converge well. 
 \newline
-All of the demographic variables, as well as the interactions, were significant except for the interaction between unspecified gender and the "other" party category. From the plots of the marginal effects of the covariates, holding median household the $< \$46,864$ category and holding age at the 18-29 level, we found that people whose gender is female have a higher expected probability of voting. For those with the same median household income as above and are female, we note that among white voters, Republicans are more likely to vote that Democrats, while the opposite is true among black voters. We also found that for those whose median household income falls in the highest category ($> \$64,509$, 75% quantile for median household incomes by county), the expected probability of voting is larger relative to the other income categories.
+All of the demographic variables, as well as the interactions, were significant except for the interaction between unspecified `gender` and the "other" `party` category. From the plots of the marginal effects of the covariates, holding median household income at the $< \$46,864$ category and holding age at the 18-29 level, we found that people whose gender is female have a higher expected probability of voting than male registered voters. For those with the same median household income as above and are female, we note that among white voters, Republicans are more likely to vote than Democrats, while the opposite is true among black voters. We also found that for those whose median household income falls in the highest category ($> \$64,509$, 75% quantile for median household incomes by county), the expected probability of voting is larger relative to the other income categories.
 \newline
-The biggest strength of this study is its focus grouping data and using it to analyze voting patterns, so that the results can directly be used for future analysis on the same demographic groups and election candidates can use this result to adjust their resource allocation during campaigns. Many key limitations are already addressed previously. Others include the weaknesses of the data set - the voting patterns in 2016 will not completely match that of 2020 even though Trump has been the Republican candidate for both races as the Democratic candidate will mobilize voters differently and the political landscape has changed from 2016 to 2020 (Weinschenk et al.). In addition, grouping also prevents us from analyzing individual-level demographic variations and predictors not yet included in our analysis. As voter turnout is a very complicated subject and a lot of predictors might be relevant in shaping voting patterns, we might be oversimplifying the study with the number of predictors we have on group levels.
+The biggest strength of this study is its focus on grouping data. Grouping data to analyze voting patterns makes results helpful for future analysis of the same demographic groups, and candidates can use this result to adjust their resource allocation during campaigns. Many limitations are already addressed previously. Others include the weaknesses of the data set - the voting patterns in 2016 will not completely match that of 2020 even though Trump has been the Republican candidate for both races as the Democratic candidate will mobilize voters differently and the political landscape has changed from 2016 to 2020 (Weinschenk et al.). Also, grouping prevents us from analyzing individual-level demographic variations and predictors not yet included in our analysis. As voter turnout is a very complicated subject and a lot of predictors might be relevant in shaping voting patterns, we might be oversimplifying the study with the number of predictors we have on group levels.
 \newline
 Finally, while demographic variables are key to explain election voter turnout, elections are complicated events and more facets of elections and diverse data sources, analyzed by different analyses, are necessary to understand voter turnout and election outcomes (Weinschenk et al.).
 
