@@ -128,7 +128,8 @@ model <- function(){
       sigma2_beta[j] = 1/sigma2_beta_inv[j]
       sigma2_beta_inv[j] ~ dgamma(nu_beta,nu_beta*tau_beta) 
       
-      beta[j,1] ~ dnorm(priors[j],pow(sigma2_0,-1))
+      #beta[j,1] ~ dnorm(priors[j],pow(sigma2_0,-1))
+      beta[j,1] ~ dnorm(priors[j],pow(7.5,-1))
   }
   nu_y ~ dunif(0,100)
   tau_y ~ dunif(0,100)

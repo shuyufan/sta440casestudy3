@@ -1,7 +1,7 @@
 ---
 title: "Interim Report: Who Votes in NC?"
 author: "Alexander Bendeck, Lynn Fan, Cathy Lee, Alice Liao, Justina Zou"
-date: "20 October 2020"
+date: "24 October 2020"
 fontsize: 11pt
 geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
 output: 
@@ -52,8 +52,8 @@ pkgTest("tidybayes") # easy residuals
 library(gtable)
 library(ggplot2)
 library(gridExtra)
-library(rjags)
-library(R2jags)
+# library(rjags)
+# library(R2jags)
 library(grid)
 library(xtable)
 library(coda)
@@ -68,29 +68,29 @@ library(stringi)
 library(ggplotify)
 library(brms)
 library(tidybayes) # easy residuals
-library(xtable)
+#library(xtable)
 ```
 
 # Introduction
 
-The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the congressional election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in several ways. First of all, the media conventional wisdom is that “higher turnout benefits Democrats,” although there has been mixed evidence about this theory (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both congressional elections and presidential races. For example, gender, race and party registration could help profile voting patterns for congressional elections (Uhlaner et al.). Election prediction models need the baseline population of voters to predict the potential outcomes, and the demographic composition of voters will directly determine the forecasting results. 
-\newline
-Among all states, North Carolina has been as a swing state in presidential and congressional elections for decades. In 2008, Obama won the state narrowly, but lost it narrowly after 4 years in 2012. Since 1996, the Republican statewide vote share in congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014 (Perrin et al.)." It makes North Carolina an interesting battleground in which voter demographic changes could potentially lead to significant implications of election outcomes and "an excellent site for those interested in partisan voting trends (Perrin et al.)." This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections, predicting who will vote in 2020.
+The United States is getting closer to the 2020 Congressional Elections on November 3, 2020. With the current polarizing political landscape, the congressional election outcomes are significant to determine the next stage of this country. As it becomes critical for statisticians to help build forecasting models to predict the election outcomes, we need to first understand the patterns of voter turnout. Voting has special importance in democratic systems, but only about half of the eligible U.S. citizenry votes, and there are real political consequences when voters differ systematically from nonvoters (Uhlaner et al.). There has been abundant literature proving that variation in voter turnout will have electoral consequences (Hansford, et al.), in several ways. First of all, the media conventional wisdom is that "higher turnout benefits Democrats," although there has been mixed evidence about this theory (Weinschenk, 2019). Second, literature has proven certain demographic factors to statistically significantly benefit one party over the other, in both congressional elections and presidential races. For example, gender, race and party registration could help profile voting patterns for congressional elections (Uhlaner et al.). Election prediction models need to understand these patterns to predict the potential election outcomes.
+
+Among all states, North Carolina has been a swing state in presidential and congressional elections for decades. In 2008, Obama won the state narrowly, but lost it narrowly after 4 years in 2012. Since 1996, the Republican statewide vote share in congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014" (Perrin et al.). It makes North Carolina an interesting battleground in which voter demographic changes could potentially lead to significant impact on election outcomes and "an excellent site for those interested in partisan voting trends" (Perrin et al.). This report seeks to understand the voter turnout of North Carolina for 2020 NC Congressional Elections in order to predict who will vote in 2020.
 
 # Data Description
 
-We are using public data provided by the NC State Board of Elections, which can all be accessed directly at the link https://dl.ncsbe.gov/list.html. The database contains voter history information for elections within the past 10 years in the ncvhis files, and all legally available voter specific information ion the ncvoter files. The ncvoter files contain point-in-time snapshot voter registration data. For privacy concerns, names, birth dates and drivers license are not included, but the two types of files could be matched by North Carolina identification (NCID) number. The ncvoter files have 8,007,192 data points available. The database was last updated on September 9, 2020. While we understand that voters might register later than that as the voter registration deadline for North Carolina is October 9, 2020, we believe it is sufficient to represent the majority of NC potential voters.
-\newline
-From the ncvhis files, we only kept the voters that voted for the 2016 general election for our analysis. Among 8,522,310 data points showing voters that voted either for the 2016 general election or the 2018 midterm election, we kept the 4,768,188 voter records for 2016. Studies have shown that presidential elections help mobilize voters, so voter turnout in presidential election years are significantly higher. In recent elections, voter turnout during presidential election years is around 60%, and only about 40% during midterm elections (FairVote.org). For North Carolina, voter turnout data in 2018 is also inappropriate to use because neither of North Carolina’s U.S. senators nor the governor was up for reelection, further demotivated voters (Perrin et al.). From the ncvoter files, we filtered demographic factors that are supported by existing literature to be significant in understanding voting patterns, including gender, race, party registration, and age (Kim et al.). We also have their county and congressional district information available. 
-\newline
+We are using public data provided by the NC State Board of Elections, which can all be accessed directly at the link https://dl.ncsbe.gov/list.html. The database contains voter history information for elections within the past 10 years in the NC voter history files, and all legally available voter specific information in the NC voter registration files. The NC voter registration files contain point-in-time snapshot voter registration data. For privacy concerns, names, birth dates and drivers license are not included, but the two types of files could be matched by North Carolina identification (NCID) number. The NC voter registration files have 8,007,192 data points available. The database was last updated on September 9, 2020. While we understand that voters might register later than that as the voter registration deadline for North Carolina is October 9, 2020, we believe it is sufficient to represent the majority of NC potential voters.
+
+From the NC voter history files, we only kept the voters that voted for the 2016 general election for our analysis. Among 8,522,310 data points showing voters that voted either for the 2016 general election or the 2018 midterm election, we kept the 4,768,188 voter records for 2016. Studies have shown that presidential elections help mobilize voters, so voter turnout in presidential election years are significantly higher. In recent elections, voter turnout during presidential election years is around 60%, and only about 40% during midterm elections (FairVote.org). For North Carolina, voter turnout data in 2018 is also inappropriate to use because neither of North Carolina’s U.S. senators nor the governor was up for reelection, further demotivating voters (Perrin et al.). From the NC voter registration files, we filtered demographic factors that are supported by existing literature to be significant in understanding voting patterns, including gender, race, party registration, and age (Kim et al.). We also have their county and congressional district information available. 
+
 Additionally, we found relevant literature proving the relationship between voter turnout and wage (Charles et al.), so we added county-level median household income data from Economic Research Service under United States Department of Agriculture to our data set for analysis (https://www.ers.usda.gov/data-products/county-level-data-sets).
 
 ## Data Munging
-After binding ncvhis files and ncvoter files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those 4,389 data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. We imputed the missing districts by matching the voter's registered county with congressional district. We removed the 4\% of voters who reside in counties that span across more than one county. Because ncvoter files show the voter registration data in 2020 while we are looking into voter turnout in 2016, it is important to treat those voters who were not eligible to vote in 2016. We subtract all voters' age by 4 years old to get the age information back in 2016, and then filtered out those 460,847 voters younger than 18 as they were unable to vote. We understand that doing so might introduce potential bias to the data set as the population 18-22 years old in 2020 might have different voting preferences than those 18-22 years old in 2016, but we believe the similarity of elections in 2016 and 2020 makes them comparable. Our **numerator** in voter turnout analysis is those who voted for the 2016 general election stored in ncvhis files, and our **denominator** is those registered voters in the ncvoter files that were eligible to vote back in 2016.
-\newline
-After reading relevant literature in voter turnout analysis, we discovered that many papers used grouping to improve the estimation of the effects of individual and geographic predictors (Park, et al.). By aggregating demographics, researchers are also able to study collective political participation across groups, especially those who have been historically underrepresented (Uhlaner, et al.). Because we have eight million data points available, running models in a one-line-per-voter data set will also be very computationally expensive, and grouping can help us improve modeling efficiency. We instead decided to group data points by gender, race, party registration, county median income, and age, so that we can run models for the data set in a collapsed format. In the combined data set, there are party registrations for all parties, including The Libertarian Party and The Green Party. Because we are interested primarily only in the Republican Party and the Democratic Party and there are concerning class imbalance issues as the two parties take up the majority of registered voter population, we binded other parties as the third category `Other` for `Party`. Similarly, because of class imbalance, we binded the races other than White and African Americans as `Other` for `Race` as well. For those missing `Gender` information, we binded them with `Unspecified`.
-\newline
-We divided (1) median county household income into four levels by the 25th, 50th, and 75th quantiles; (2) age into four levels for 18-29, 30-44, 45-59, and older than 60 years old, as it is a common way to analyze voter ages (McDonald, 2020); (3) gender into three categories, Female, Male and Other, and (4) race into three categories, Black, White, and Other.
+After binding NC voter history files and NC voter registration files by NCID and binding NC median household income by county, we started to process data for analysis. First of all, we identified those 4,389 data points older than 116 years old and removed them as the oldest person in NC is 116 years old and anyone older should be wrong data points. Many data points are also missing congressional district information. We imputed the missing districts by matching the voter's registered county with congressional district. We removed the 4\% of voters who reside in counties that span across more than one congressional district. Because NC voter registration files show the voter registration data in 2020 while we are looking into voter turnout in 2016, it is important to treat those voters who were not eligible to vote in 2016. We subtract all voters' age by 4 years old to get the age information back in 2016, and then filtered out those 460,847 voters younger than 18 as they were unable to vote. We understand that doing so might introduce potential bias to the data set as the population 18-22 years old in 2020 might have different voting preferences than those 18-22 years old in 2016, but we believe the similarity of elections in 2016 and 2020 makes them comparable. Our **numerator** in voter turnout analysis is those who voted for the 2016 general election stored in NC voter history files, and our **denominator** is those registered voters in the NC voter registration files that were also eligible to vote back in 2016. The resulting binded data set has 7,229,595 rows.
+
+After reading relevant literature in voter turnout analysis, we discovered that many papers used grouping to improve the estimation of the effects of individual and geographic predictors (Park, et al.). By aggregating demographics, researchers are also able to study collective political participation across groups, especially those who have been historically underrepresented (Uhlaner, et al.). Because we have eight million data points available, running models in a one-line-per-voter data set will also be very computationally expensive, and grouping can help us improve modeling efficiency. We instead decided to group data points by gender, race, party registration, county median income, and age, so that we can run models for the data set in a collapsed format. In the combined data set, there are party registrations for all parties, including the Libertarian Party and the Green Party. Because we are interested primarily only in the Republican Party and the Democratic Party and there are concerning class imbalance issues as the two parties take up the majority of registered voter population, we binded other parties as the third category `Other` for party. Similarly, because of class imbalance, we binded the races other than White and African Americans as `Other` for race as well. For those missing gender information, we binded them with `Unspecified`.
+
+We divided (1) median county household income into four levels by the 25th, 50th, and 75th quantiles; (2) age into four levels for 18-29, 30-44, 45-59, and older than 60 years old, as it is a common way to analyze voter ages (McDonald, 2020); (3) gender into three categories, Female, Male and Other, and (4) race into three categories, Black, White, and Other. The final grouped data set has 432 subgroups (and therefore 432 rows). 
 
 # EDA
 
@@ -136,7 +136,7 @@ voter_grouped %>%
 ```{r make-smaller, include = F}
 #saved data with binned age, binned income
 voter_hist_districts_resp  = voter_hist_districts_resp  %>%
-  select(-pct_description)
+  dplyr::select(-pct_description)
 # saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp_binned.rds")
 ```
 
@@ -145,28 +145,28 @@ voter_grouped$voterpercent <- voter_grouped$votes / voter_grouped$n
 ```
 
 ```{r EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Grouped Feature Variable Exploration"}
-binned_race_party <- ggplot(voter_grouped, aes(x = race_code, y = voterpercent)) + geom_bar(aes(fill = party_cd), stat = "identity", position = "dodge") + labs(y="Turnout Percentage", x = "Race", title = "Voter Turnout for Different \n Party Affliation and Race") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-binned_gender_party <- ggplot(voter_grouped, aes(x = gender_code, y = voterpercent)) + geom_bar(aes(fill = party_cd), stat = "identity") + labs(y="Turnout Percentage", x = "Gender", title = "Voter Turnout for Different \n Party Affliation and Gender") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-binned_age_gender <- ggplot(voter_grouped, aes(x = age_binned, y = voterpercent)) + geom_bar(aes(fill = gender_code), stat = "identity", position = "dodge") + labs(y="Turnout Percentage", x = "Age", title = "Voter Turnout for Different Age and Gender") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-binned_age_party <- ggplot(voter_grouped, aes(x = party_cd, y = voterpercent)) + geom_bar(aes(fill = age_binned), stat = "identity") + labs(y="Turnout Percentage", x = "Registered Party", title = "Voter Turnout for Different \n Party Affliation and Age") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-
+binned_race_party <- ggplot(voter_grouped, aes(x = race_code, y = voterpercent)) + geom_bar(aes(fill = party_cd), stat = "identity", position = "dodge") + labs(y="Turnout Percentage", x = "Race", title = "Voter Turnout for Different \n Party Affliation and Race", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+binned_gender_party <- ggplot(voter_grouped, aes(x = gender_code, y = voterpercent)) + geom_bar(aes(fill = party_cd), stat = "identity") + labs(y="Turnout Percentage", x = "Gender", title = "Voter Turnout for Different \n Party Affliation and Gender", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+binned_age_gender <- ggplot(voter_grouped, aes(x = age_binned, y = voterpercent)) + geom_bar(aes(fill = gender_code), stat = "identity", position = "dodge") + labs(y="Turnout Percentage", x = "Age", title = "Voter Turnout for Different Age and Gender", fill = "Gender") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+binned_age_party <- ggplot(voter_grouped, aes(x = party_cd, y = voterpercent)) + geom_bar(aes(fill = age_binned), stat = "identity") + labs(y="Turnout Percentage", x = "Registered Party", title = "Voter Turnout for Different \n Party Affliation and Age", fill = "Age") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
 
 grid.arrange(grobs = list(binned_race_party, binned_gender_party, binned_age_gender, binned_age_party), ncol = 2)
 ```
 
-After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range, which are named as `party_cd`, `gender_code` and `age_binned`, respectively. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. In the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
+After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. In the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
 
 # Method
 
-We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballout. Motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. We will then be able to get average estimates for each of the subgroups from the posterior distributions. Bayesian viewpoint is an intuitive way of incorporating data to update the estimates and this method allows us to quantify the uncertainty about the model. 
+We will take a Bayesian approach to not only predict if a voter with a certain profile would vote, but also understand quantitatively how the geographic and demographic information of a registered voter is associated with his or her likelihood of actually casting a ballot. Motivated by Y. Ghitza and A. Gelman’s idea of grouping (2013), we divide the population into mutually exclusive categories according to their demographic and geographic characteristics and fit a Bayesian model with group-level predictors as well as their interactions. We will then be able to get average estimates for each of the subgroups from the posterior distributions. Bayesian viewpoint is an intuitive way of incorporating data to update the estimates and this method allows us to quantify the uncertainty about the model. 
 
-From Exploratory Data Analysis and literature, we identify voters' income (binned), gender, race, age (binned) and party affiliation as potentially useful predictors in predicting voter turnout. Furthermore, literature suggests possible interations between some variables. Pew Research highlighted that historically party identification differs widely by gender (2020) and age (2016), J. Misra (2019) found while younger women voted at higher rates than younger men, women age 65 and older voted at lower rates than men in the same age range, Walker et al (2019) found there are differential impacts across race and party subgroups on turnout especially in North Carolina's due to its status as a swing state. 
+From Exploratory Data Analysis and literature, we identify voters' income (binned), gender, race, age (binned) and party affiliation as potentially useful predictors in predicting voter turnout. Furthermore, literature suggests possible interactions between some variables. Pew Research Center highlighted that historically party identification differs widely by gender (2020) and age (2016). J. Misra (2019) found while younger women voted at higher rates than younger men, women aged 65 and older voted at lower rates than men in the same age range. Walker et al (2019) found there are different effects across race and party subgroups on turnout especially in North Carolina due to its status as a swing state. 
 
-We propose a model with the following equation: 
+We decided to use a fixed-effect logistic regression model. Since we are analyzing whether or not an individual votes, the range that the response variable can take is between 0 and 1; therefore, logistic regression using grouped summary data is the most reasonable model. Coefficients and confidence intervals will help us answer the research question on potential associations of predictor variables. We propose a model with the following equation: 
 
 $$
 \begin{aligned}
-logit(Vote_i) = \alpha_0 + \Sigma_{s \in S}\beta_{j}*I(Income_i = Income \ Categoty_s) + \Sigma_{g \in G}\beta_g*I(Gender_i = Gender \ Category_g) +\\
+Vote_i \sim Binomial(n_i, \pi_i) \\
+logit(\pi_i) = \alpha_0 + \Sigma_{s \in S}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{g \in G}\beta_g*I(Gender_i = Gender \ Category_g) +\\
 \Sigma_{r \in R}\beta_r*I(Race_i = Race \ Category_r) + \Sigma_{a \in A}\beta_a*I(Age_i = Age \ Category_a) +\\
 \Sigma_{p \in P}\beta_p*I(Party_i = Party \ Category_p) + \\
 \Sigma_{g \in G, p \in P}\beta_{gp}*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
@@ -182,16 +182,16 @@ $$
 S = \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\}\\
 G = \{Male, Unspecified\} \\
 R = \{Black, Other\} \\
-A = \{Age 30-44, \ Age 45-59, \ Age 60+\} \\
+A = \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
 P = \{Republican, \ Other\}
 \end{aligned}
 $$
 
-The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
+Where $\pi_i$ is the probability that subgroup $i$ votes. $Vote_i$ is the number of people in the $i$th subgroup that voted in the 2016 election. The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
-Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution with mean = 0, sigma = 2.5 and degree of freedom = 3 for the $\alpha$ intercept (i.e. $\alpha \sim Student_3(0,2.5)$ and $\beta \sim Unif(0,1)$).
+Due to the lack of strong prior knowledge, we will use `brm` function's default priors: flat prior for all the $\beta$ coefficients and a Student t distribution for $\alpha$  (i.e. $\alpha \sim Student_3(0,2.5)$).
 
-In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other a similar Bayesian model with additional random effect at the congressional district level. In this way, we hope to assess if the Bayesian framework is superior to a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
+In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other is a similar Bayesian model with an additional random effect at the congressional district level. In this way, we hope to assess if the Bayesian framework is superior to a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
 ```{r run-brms-model, cache = T, include = F, warning = F, message = F}
 binary_model <-
@@ -234,13 +234,15 @@ cat(c("\\begin{table}[!htb]
 ))  
 ```
 
-Table 1 and Table 2 show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for `Gender Unspecified:Party Other` have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the `Gender Unspecified:Party Other` not being significant since the interaction between `gender` and `party` for the other levels are significant, so we still include this interaction in the model. The intercept can be interpreted as follows: For a white, female Democrat aged 18-29 whose median household income is in the lowest category (< $46k), the odds of voting is `r exp(0)` with a 95% CI of (`r exp(-0.1)`, `r exp(0)`). For a white, female Democract aged 18-29 whose median household income is in the second quartile, the odds of voting is `r exp(0.1)` with a 95% CI of (`r exp(0.09)`, `r exp(0.10)`). We can interpret the effect of gender as follows: Holding median household income, race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r exp(-0.43)` times that among women with a 95% CI of (`r exp(-0.44)`, `r exp(-0.42)`). We can also note that, holding median household income and age at baseline, the odds of voting among black Republican men is `r exp(-0.43+0.18-0.98)` times that among black Republican women with a 95% CI of (`r exp(-0.44+0.17-1)`, `r exp(-0.42+0.19-0.96)`.  
+Table 1 and Table 2 show that each coefficient has small standard errors (no indication of identifiability issues). In addition, we see that all variables except for the interaction between unspecified gender and third/unregistered party have credible intervals that do not contain 0, indicating significance in determining who votes. We are not particularly concerned about the this interaction not being significant since the interaction between gender and party for the other levels are significant, so we still include this interaction in the model. We can interpret the intercept and coefficients as follows: 
 
-*TODO: Add interpretations 10am*
+- For a white, female Democrat aged 18-29 whose county median household income is in the lowest category (< $\$46.9k$), the odds of voting is `r round(exp(0),2)` with a 95% CI of (`r round(exp(-0.1),2)`, `r round(exp(0),2)`). 
+- For a white, female Democrat aged 18-29 whose county median household income is in the second quartile ($\$46.9k-\$52.8k$), the odds of voting increases by a multiplicative factor `r round(exp(0.1),2)` with a 95% CI of (`r round(exp(0.09),2)`, `r round(exp(0.10),2)`) compared to the first quartile (< $\$46.9k$). 
+- Holding county median household income (< $\$46.9k$), race (White), party (Democrat), and age (18-29) at baseline, the odds of voting among men is `r round(exp(-0.43),2)` times that among women with a 95% CI of (`r round(exp(-0.44),2)`, `r round(exp(-0.42),2)`). We can also note that, holding county median household income and age at baseline, the odds of voting among black Republican men is `r round(exp(-0.43+0.18-0.98),2)` times that among black Republican women. 
 
-<!-- # ```{r plot-to-interpret-main, echo = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"} -->
-<!-- # plot(conditional_effects(binary_model, effects = "med_inc_binned")) -->
-<!-- # ``` -->
+<!-- with a 95% CI of (`r round(exp(-0.44+0.17-1),2)`, `r round(exp(-0.42+0.19-0.96),2)`). *not sure if we can just sum up the CI?*  -->
+
+- For white, female Democrat voters with county median household income less than $\$46.9k$, the odds of voting among those aged 30-44 would be `r round(exp(0.62),2)` times higher than among those aged 18-29 with 95% CI of (`r round(exp(0.61),2)`, `r round(exp(0.63),2)`). In fact, if we hold all other variables at baseline, the odds of voting is the lowest in the lowest age group. The odds of voting among older (aged 60+) Republican white male voters with median income less than $\$46.9k$ is `r round(exp(0.94+0.19-0.43+0.18+0.25-0.06),2)` times more likely than the odds of voting among voters with all baseline demographic characteristics.
 
 <!-- # ```{r plot-to-interpret-main-test, eval = F, message = F, warning = F, fig.width = 8, fig.height = 4, fig.cap="Marginal Effect of Median Household Income"} -->
 <!-- # p1 = plot(conditional_effects(binary_model, effects = "med_inc_binned"), plot=FALSE)[[1]] -->
@@ -260,6 +262,8 @@ Table 1 and Table 2 show that each coefficient has small standard errors (no ind
 conditions <- data.frame(gender_code = as.character(c("F", "M", "U")))
 p2 = plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]]
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
 
 p2 <- p2 + labs(x = "Race", y = "Fitted Probabilities")
 p2 <- p2 +
@@ -271,18 +275,20 @@ theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
 conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
 p3 = plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))), plot=FALSE)[[1]]
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
 
 p3 <- p3 + labs(x = "Party", y = "Fitted Probabilities")
 p3 <- p3 +
 theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
-#print(p3)
+# print(p3)
 ```
 
 ```{r, echo = F, message = F, warning = F, fig.width = 10, fig.height=4, fig.cap = "\\label{bothinterp} Marginal Effect of Party by Age and Race"}
 grid.arrange(p2,p3, nrow = 1)
 ```
 
-We can interpret each point in Figure \ref{bothinterp} as follows: holding `median household income` at baseline (less than $\$46,864$) and `age` at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular `race` (x-axis), `party` (color), and `gender` (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.4, whereas the expected probability that a black, male, Republican votes is approximately 0.28. We can also see that women, regardless of `race` and `party`, are expected to be more likely to vote than men. The plot on the right in Figure \ref{bothinterp} shows that, holding `median household income` at baseline (less than $\$46,864$) and `gender` at baseline (female), the expected probability of voting for white Democrats across all age groups is less than that for white Republicans. However, the expected probability of voting among black Democrats across all age groups is higher than that among black Republicans.
+We can interpret each point in the left plot of Figure \ref{bothinterp} as follows: holding county median household income at baseline (less than $\$46,864$) and age at baseline (ages 18-29), the y-axis value is the expected probability that a person of a particular race (x-axis), party (color), and gender (facet) votes. For example, the expected probability that a black, male, Democrat votes is 0.4, whereas the expected probability that a black, male, Republican votes is approximately 0.28. We can also see that women, regardless of race and party, are expected to be more likely to vote than men. The plot on the right in Figure \ref{bothinterp} shows that, holding county median household income at baseline (less than $\$46,864$) and gender at baseline (female), the expected probability of voting for white Democrats within each age group is less than that for white Republicans. However, the expected probability of voting among black Democrats within each age group is higher than that among black Republicans.
 
 # Model Validation
 
@@ -316,10 +322,10 @@ cat('RMSE with 5-fold CV:', rmse(y = k5_pred$y, yrep = k5_pred$yrep), '\n')
 cat('RMSE with 10-fold CV:', rmse(y = k10_pred$y, yrep = k10_pred$yrep), '\n')
 ```
 
-```{r posterior-pred-checks, echo = F, fig.width = 8, fig.height = 4, warning = F, message = F, fig.cap = "\\label{ppc} Posterior Predictive Checks"}
+```{r posterior-pred-checks, echo = F, fig.width = 8, fig.height = 4, warning = F, message = F, fig.cap = "\\label{ppc} Posterior Predictive Checks Plots"}
 # PPC
 ppc = pp_check(binary_model) + 
-  xlab("Number voted") + 
+  xlab("Number Voted") + 
   ylab("Density") + 
   yaxis_ticks() + 
   yaxis_text()
@@ -343,7 +349,7 @@ dot = ggplot(data = d, aes(x = case, y = votes / n)) +
                   shape = 1, alpha = 1/3) + 
   geom_point(data=d, aes(x=case, y=votes/n)) +
   theme(axis.text.x=element_blank()) +
-  labs(y = "Voter Turnout")
+  labs(y = "Voter Turnout", x = "Groups")
 
 grid.arrange(ppc, dot, ncol = 2)
 # # True dots colored by whether it was within the quantile or not
@@ -360,9 +366,9 @@ grid.arrange(ppc, dot, ncol = 2)
 #   geom_point(data=temp, aes(x=case, y=votes/n, color=within))
 ```
 
-Figure \ref{ppc} displays the posterior predictive checks for our model. The plots show that our simulated distribution is similar to the observed distribution. Our simulations also produce few outliers. It appears that the true values are covered by the 95% confidence intervals of the predicted values, indicating model fit.
+Figure \ref{ppc} displays the posterior predictive checks for our model. On the left, the dark black line is the observed distribution and the light blue line is the simulated distribution. On the right, the black dots are the actual voter turnout for each subgroup, and the grey points are the predicted turnout with 95% credible intervals. The plots show that our simulated distribution is similar to the observed distribution. Our simulations also produce few outliers. It appears that most of the true values are covered by the 95% confidence intervals of the predicted values, indicating model fit.
 
-```{r resids, echo = F, fig.width = 8, fig.height = 4}
+```{r resids, echo = F, fig.width = 8, fig.height = 4, fig.cap = "\\label{resplot} Residual Plot"}
 # Residuals
 voter_grouped %>%
   add_residual_draws(binary_model) %>%
@@ -372,7 +378,7 @@ voter_grouped %>%
   labs(x = "Group", y = "Standardized Residuals")
 ```
 
-Most of the standardized residuals are within $\pm$ 2, but some points have somewhat larger values. This means that for the majority of the groupings, the model predicts fairly well. 
+Most of the standardized residuals (shown in Figure 4) are within $\pm$ 2, but some points have somewhat larger values. This means that for the majority of the groups, the model predicts fairly well. 
 
 ```{r external-validation, fig.width = 8, fig.height = 4, echo = F, message = F, warning = F}
 grouped_voters_2012 = readRDS("grouped_voter_data_2012.rds")
@@ -388,7 +394,7 @@ extern_est = predict(binary_model, grouped_voters_2012, type = "response")[,1]
 extern_rmse = sqrt(mean((extern_est - grouped_voters_2012$votes)^2))
 ```
 
-We conducted external validation on the 2012 dataset, cleaned the same way the 2016 dataset was cleaned. The RMSE for the 2012 dataset is `r round(extern_rmse,2)`, which is larger than the RMSE from internal validation for the 2016 dataset `r round(rmse(y = k10_pred$y, yrep = k10_pred$yrep),2)`. This is to be expected, since the difference in the candidates on the ballot between the two years may mobilize different types of voters (e.g. Hillary Clinton being on the ballot prompted many women to come out to vote, but this trend may not hold for the 2012 election).
+We conducted external validation on the 2012 dataset, cleaned the same way the 2016 dataset was cleaned. The RMSE for the 2012 dataset is `r round(extern_rmse,2)`, which is larger than the RMSE from internal validation for the 2016 dataset, `r round(rmse(y = k10_pred$y, yrep = k10_pred$yrep),2)`. This is to be expected because the candidates on the ballot between the two elections may mobilize different types of voters. For example, Hillary Clinton being on the ballot prompted many women to come out to vote, whereas Barack Obama in the 2012 election prompted many African Americans to vote (Weinschenk, et al).
 
 # Sensitivity Analysis
 
@@ -409,20 +415,22 @@ randeff_model_aic = randeff_model_waic_obj$estimates[3,1]
 #saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
 ```
 
-As part of our sensitivity analysis, we fit a model with identical predictor variables to our main model but with different priors. Based on literature review, we chose normal priors for the main effects that aligned with expectations that older voters tend to vote more often (McDonald, 2020), men tend to vote less often than women (Igielnik, 2020), party-unaffiliated voters tend to vote less often (Killian, 2012), and wealth tends to correlate positively with voter turnout (Akee, 2019). For these main effects, we chose the normal priors to have means somewhere between 0.5 and 1, and we chose a variance of 3. For all other terms (including interactions and intercept), we chose normal priors with a mean of 0 and a variance of 3. Changing these priors had no significant effect on the resulting coefficients or confidence intervals (see model output in Appendix).
+As part of our sensitivity analysis, we fit a model with identical predictor variables to our main model but with different priors. Based on literature review, we chose normal priors for the main effects that aligned with expectations that older voters tend to vote more often (McDonald, 2020), men tend to vote less often than women (Igielnik, 2020), party-unaffiliated voters tend to vote less often (Killian, 2012), and wealth tends to correlate positively with voter turnout (Akee, 2019). For these main effects, we chose the normal priors to have means somewhere between 0.5 and 1, and we chose a variance of 3. For all other terms (including interactions and intercept), we chose normal priors with a mean of 0 and a variance of 3. Changing these priors had minimal effect on the resulting coefficients and confidence intervals (see model output in Appendix).
 
-We also fit another model with a random intercept for congressional districts to capture variation between voters in different geographic parts of North Carolina. The coefficients (included in the Appendix, along with group-level s.d.) look largely the same compared to the main model, with the exception that the coefficients for income are a bit smaller. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(randeff_model_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`).
+We also fit another model with a random intercept for congressional districts to capture poissble variation between voters in different geographic parts of North Carolina. The coefficients (included in the Appendix, along with group-level standard deviation) look largely the same compared to the main model, with the exception that the coefficients for income are a bit smaller. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(randeff_model_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`).
 
 Finally, since all of the models discussed above were fit using a Bayesian framework via the \texttt{brms} package, we decided to fit a frequentist model for comparison. The model output (included in the Appendix) shows little difference from the results of our main Bayesian model.
 
 # Conclusion and Limitations
 
-We fit a Bayesian logistic regression model to model the binary outcome of whether or not a demographic subgroup, defined by their race, gender, party affiliation, age, and median household income (such as white Female Democrats between 30-44 years of age whose median household income is greater than $64,509) votes. Based on results from literature review, we added interactions between gender and party, race and party, age and gender, and age and party. After model comparisons, we did not include random effect in our model. Our MCMC diagnostics and model diagnostics do not indicate a lack of fit and show that our model coefficients converge well. 
-\newline
-All of the demographic variables, as well as the interactions, were significant except for the interaction between unspecified `gender` and the "other" `party` category. From the plots of the marginal effects of the covariates, holding median household income at the $< \$46,864$ category and holding age at the 18-29 level, we found that people whose gender is female have a higher expected probability of voting than male registered voters. For those with the same median household income as above and are female, we note that among white voters, Republicans are more likely to vote than Democrats, while the opposite is true among black voters. We also found that for those whose median household income falls in the highest category ($> \$64,509$, 75% quantile for median household incomes by county), the expected probability of voting is larger relative to the other income categories.
-\newline
-The biggest strength of this study is its focus on grouping data. Grouping data to analyze voting patterns makes results helpful for future analysis of the same demographic groups, and candidates can use this result to adjust their resource allocation during campaigns. Many limitations are already addressed previously. Others include the weaknesses of the data set - the voting patterns in 2016 will not completely match that of 2020 even though Trump has been the Republican candidate for both races as the Democratic candidate will mobilize voters differently and the political landscape has changed from 2016 to 2020 (Weinschenk et al.). Also, grouping prevents us from analyzing individual-level demographic variations and predictors not yet included in our analysis. As voter turnout is a very complicated subject and a lot of predictors might be relevant in shaping voting patterns, we might be oversimplifying the study with the number of predictors we have on group levels.
-\newline
+We fit a Bayesian logistic regression model to model the binary outcome of whether or not a demographic subgroup, defined by their race, gender, party affiliation, age, and median county household income (such as white female Democrats between 30-44 years of age whose county median household income is greater than $64,509) votes. Based on results from literature review, we added interactions between gender and party, race and party, age and gender, and age and party. After model comparison, we did not include random effects in our model. Our MCMC diagnostics and model diagnostics do not indicate a lack of fit and show that our model coefficients converge well. 
+
+All of the demographic variables, as well as the interactions, were significant except for the interaction between unspecified gender and the third/unspecified party category. From the plots of the marginal effects of the covariates, holding county median household income at the $< \$46,864$ category and holding age at the 18-29 level, we found that females have a higher expected probability of voting than male registered voters. For those with the same county median household income as above and are female, we note that among white voters, Republicans are more likely to vote than Democrats, while the opposite is true among black voters. We also found that for those whose county median household income falls in the highest category ($> \$64,509$), the expected probability of voting is larger relative to any other income category.
+
+The biggest strength of this study is its focus on grouping data. Grouping data to analyze voting patterns makes results helpful for future analysis of the same demographic groups, and candidates can use this result to adjust their resource allocation during campaigns.  Another strength is the substantial amount of diagnostics, validation, and sensitivity analysis done to evaluate model fit and demonstrate the robustness of our final model.
+
+Many limitations were already addressed previously. Others include the weaknesses of the data set, namely that the voting patterns in 2016 will not completely match that of 2020 even though Trump has been the Republican candidate for both races. This is because the Democratic candidate may mobilize voters differently and the political landscape has changed between 2016 and 2020 (Weinschenk et al.). Also, grouping prevents us from analyzing individual-level demographic variations and predictors not yet included in our analysis. As voter turnout is a very complicated subject and a lot of predictors might be relevant in shaping voting patterns, we might be oversimplifying the study with the number of predictors we have on the group level.
+
 Finally, while demographic variables are key to explain election voter turnout, elections are complicated events and more facets of elections and diverse data sources, analyzed by different analyses, are necessary to understand voter turnout and election outcomes (Weinschenk et al.).
 
 # Appendix
@@ -485,15 +493,16 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 
 ## Additional EDA
 
-```{r, eval = F}
+```{r, echo = F, fig.width = 8, fid.height = 4}
 binned_income <- ggplot(voter_grouped, aes(x = med_inc_binned, y = voterpercent)) + geom_bar(stat = "identity") + labs(aes(fill = party_cd), y="Turnout Percentage", x = "County Median Household Income", title = "Voter Turnout for Different \n Median Household Income and Party Affliation") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-density_age_party <- ggplot(voter_hist_districts_resp, aes(birth_age,color=party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters", caption = "Figure 1") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
-stacked_race_party <- ggplot(voter_hist_districts_resp, aes(race_code,fill=party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party", caption = "Figure 1")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
-box_age_race <- ggplot(voter_hist_districts_resp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races", caption = "Figure 2")  +theme(plot.title = element_text(hjust = 0.5)) 
-binned_income
-density_age_party
-stacked_race_party
-box_age_race
+density_age_party <- ggplot(voter_hist_districts_resp, aes(birth_age,color=party_cd)) + labs(y="Density", x = "Age", title = "Marginal Density for Ages \n of Different Party Voters") + geom_density(alpha=.5)  +theme(plot.title = element_text(hjust = 0.5))
+stacked_race_party <- ggplot(voter_hist_districts_resp, aes(race_code,fill=party_cd)) + labs(y="Density", x = "Age", title = "Race v. Party")+ geom_bar( position="fill", stat="count") + theme(plot.title = element_text(hjust = 0.5))
+box_age_race <- ggplot(voter_hist_districts_resp, aes(x=race_code, y=birth_age)) + geom_boxplot() + labs(y="Age", x = "Race", title = "Age v. Races")  +theme(plot.title = element_text(hjust = 0.5)) 
+# binned_income
+# density_age_party
+# stacked_race_party
+# box_age_race
+grid.arrange(binned_income,density_age_party,stacked_race_party,box_age_race, nrow = 2)
 ```
 
 ## Plots
@@ -507,7 +516,7 @@ main_effects = c("med_inc_binned", "gender_code", "race_code", "age_binned", "pa
 #     plot(conditional_effects(binary_model, effects = var))#))
 # }
 
-p1 = as.grob(plot(conditional_effects(binary_model, effects = main_effects[1]), plot=FALSE)[[1]] + labs(x = "Median Household Income", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p1 = as.grob(plot(conditional_effects(binary_model, effects = main_effects[1]), plot=FALSE)[[1]] + labs(x = "County Median Household Income", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
 p2 = as.grob(plot(conditional_effects(binary_model, effects = main_effects[2]), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
 p3 = as.grob(plot(conditional_effects(binary_model, effects = main_effects[3]), plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
 p4 = as.grob(plot(conditional_effects(binary_model, effects = main_effects[4]), plot=FALSE)[[1]] + labs(x = "Binned Age", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
@@ -518,100 +527,161 @@ grid.arrange(grobs = list(p1, p2, p3, p4, p5), ncol = 2)
 
 ```{r interactions-plot1, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(gender_code = as.character(c("M", "F", "U")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
 
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
      
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
-     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+     facet_args = list(labeller = labeller(cond__ = c("1" = "F", "2" = "M", "3" = "U"))), plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
      
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-2, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(party_cd = as.character(c("DEM", "REP", "Other")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
      
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
      
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
      
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "DEM", "2" = "REP", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
      
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-3, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(race_code = as.character(c("White", "Black", "Other")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
      
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
      
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "White", "2" = "Black", "3" = "Other"))),
-     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-4, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(age_binned = as.character(c("18-29", "30-44", "45-59", "60+")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+     plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-       plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+       plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
 
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
 
-p4 = as.grob(plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot(conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "18-29", "2" = "30-44", "3" = "45-59", "4" ="60+")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
 
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
 ```{r, interactions-plot-5, echo = F, fig.height = 5, fig.width = 10, message = F, warning = F}
 conditions <- data.frame(med_inc_binned = as.character(c("< 46864", "46864 - 52798", "52798 - 64509", "> 64509")))
-p1 = as.grob(plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
+p1 <- plot(conditional_effects(binary_model, effects = "gender_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p1$labels$fill <- "Party"
+p1$labels$colour <- "Party"
+p1 = as.grob(p1)
 
-p2 = as.grob(plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
+p2 <- plot(conditional_effects(binary_model, effects = "race_code:party_cd", conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Race", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p2$labels$fill <- "Party"
+p2$labels$colour <- "Party"
+p2 = as.grob(p2)
 
-p3 = as.grob(plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
+p3 <- plot( conditional_effects(binary_model, effects = "gender_code:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Gender", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p3$labels$fill <- "Binned Age"
+p3$labels$colour <- "Binned Age"
+p3 = as.grob(p3)
 
-p4 = as.grob(plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
+p4 <- plot( conditional_effects(binary_model, effects = "party_cd:age_binned",conditions = conditions),
      facet_args = list(labeller = labeller(cond__ = c("1" = "< 46864", "2" = "46864 - 52798", "3" = "52798 - 64509", "4" ="> 64509")), ncol = 2),
-          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14)))
+          plot=FALSE)[[1]] + labs(x = "Party", y = "Fitted Probabilities") + theme(axis.text=element_text(size=8), axis.title=element_text(size=14))
+p4$labels$fill <- "Binned Age"
+p4$labels$colour <- "Binned Age"
+p4 = as.grob(p4)
 grid.arrange(grobs = list(p1, p2, p3, p4), ncol = 2)
 ```
 
@@ -643,6 +713,8 @@ for(i in seq(1, ncol(post)-3-n_to_plot, n_to_plot)) {
   print(p)
 }
 ```
+
+\pagebreak
 
 # Sensitivity Analysis Model Output
 
