@@ -43,9 +43,9 @@ econ_pres_polls = econ_pres_polls %>%
   mutate(state = ifelse(state == "--","US",state),
          y = biden/(biden + trump)*100)
 
-#states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX", "AK", "SC", "MO", "MT", "MS")
+states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX", "AK", "SC", "MO", "MT", "MS")
 
-#econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
+econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
 
 ```
 
@@ -116,6 +116,8 @@ model <- function(){
 }
 ```
 
+
+
 ```{r run_model,eval=TRUE,cache=TRUE}
 
 #be sure to add your added parameters to parameters.to.save
@@ -134,6 +136,58 @@ BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
 hist(BidenWins)
 
 print(c(quantile(BidenWins, 0.3), quantile(BidenWins, 0.7)))
+```
+
+# With multivariate formulation
+
+```{r mv_model}
+model_mv <- function(){
+  for(k in 1:N_polls){
+    y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
+    p[k] = theta[r[k],t[k]]
+  }
+  for(j in 2:N_days){
+    theta[1:N_states,j] ~ dmnorm(theta[1:N_states,j-1],Phi)
+  }
+  
+  Phi ~ dwish(I_states,N_states+1) #fill in wishart parameters, google JAGS wishart distribution should turn it up
+  Sigma = inverse(Phi)
+  #which, Phi or Sigma is the covariance and which is the precision? 
+  
+  #optional: theta[1:N_states,1] ~ dmnorm(mu0,s0) #define mu0 and s0 in your jags_data object
+  
+  #Use your hierarhciacl prior for sigma2_y from before 
+  for(j in 1:N_states){
+      sigma2_y[j] = 1/sigma2_y_inv[j]
+      sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
+      
+      theta[j,1] ~ dnorm(mu0,pow(sigma2_0,-1))
+  }
+  nu_y ~ dunif(0,100)
+  tau_y ~ dunif(0,100)
+  
+  nu_beta ~ dunif(0,100)
+  tau_beta ~ dunif(0,100)
+  
+  mu0 ~ dnorm(50,pow(7.5,-2))
+  sigma2_0 = 1/sigma2_0_inv
+  sigma2_0_inv ~ dgamma(.5,.5)
+}
+```
+
+```{r}
+dex_states_inc = 
+state_correlation_matrix[c(),c()]
+```
+
+```{r}
+jags_data$I_states <- diag(N_states)
+
+
+#be sure to add your added parameters to parameters.to.save
+jags_sims_mv <- jags(data = jags_data,model.file = model_mv,parameters.to.save = c("theta","Sigma",
+                                                                                "p","sigma2_y"),
+                  n.iter = 10000)
 ```
 
 ## Not required: Probability of Biden Win by State

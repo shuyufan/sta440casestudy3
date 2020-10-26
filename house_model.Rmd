@@ -75,7 +75,11 @@ t <- final_polls$days_to_election + 1 #WHY PLUS ONE?
 N_polls <- y %>% length
 N_districts <- districts %>% length
 N_days <- t %>% max
+```
 
+```{r}
+# from 538 article on redistricting
+# https://fivethirtyeight.com/features/north-carolinas-new-house-map-hands-democrats-two-seats-but-it-still-leans-republican/
 partisan_leans = as.matrix(c(10, 19, -24, 29, -36, 18, -20, -10, -13, -38, -17, 34, -36))
 
 lean_to_prior = function(lean) {
