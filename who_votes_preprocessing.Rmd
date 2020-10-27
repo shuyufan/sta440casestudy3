@@ -442,6 +442,22 @@ voter_grouped_sa %>%
 
 saveRDS(voter_grouped_sa, "voter_grouped_sa_ra.rds")
 
+voter_grouped_sa = voter_hist_districts_resp %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, county_desc) %>%
+  summarise(n = n(), votes = sum(vote_or_not))
+
+voter_grouped_sa %>%
+  arrange(., n)
+
+saveRDS(voter_grouped_sa, "voter_grouped_county.rds")
+
+# pull output (.rds) for randeff_revision_county_grouped_model_output.rds
+# and randeff_revision_cong_dist_grouped_model_output.rds
+```
+
+
+
+```{r}
 binary_model <-
   brm(data = voter_grouped_sa, family = binomial,
       votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code*party_cd + race_code*party_cd + gender_code*age_binned + party_cd*age_binned + (1|cong_dist_abbrv),

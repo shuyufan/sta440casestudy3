@@ -107,6 +107,7 @@ N_polls <- y %>% length
 N_states <- states %>% length
 N_days <- t %>% max
 
+# calculate partisan lean part of the prior
 #leans_allstates = read.csv("partisan_leans.csv")
 leans_allstates = read.csv("partisan_leans_538.csv")
 leans_states = NULL
@@ -119,7 +120,37 @@ lean_to_prior = function(lean) {
   return(50 + (1/2)*lean)
 }
 
-priors = lean_to_prior(leans_states)
+# calculate the fundamentals part of the prior
+# read in abramowitz data
+abramowitz <- read.csv('abramowitz_data.csv') # %>% filter(year < 2016)
+prior_model <- lm(incvote ~  juneapp + q2gdp, data = abramowitz)
+
+# make predictions (for 2020, g2gdp = -9.1, juneapp = -10)
+# keep sources for this! https://www.bea.gov/news/glance
+national_mu_prior <- predict(prior_model,newdata = tibble(q2gdp = -31.4, juneapp = -10))
+
+national_mu_prior <- 100 - predict(prior_model,newdata = tibble(q2gdp = 1.1, juneapp = 4))
+
+# on correct scale
+# national_mu_prior <- national_mu_prior / 100
+# Mean of the mu_b_prior
+# mu_b_prior <- logit(national_mu_prior + prior_diff_score)
+# # or read in priors if generated already
+# prior_in <- read_csv("data/state_priors_08_12_16.csv") %>%
+#   filter(date <= RUN_DATE) %>%
+#   group_by(state) %>%
+#   arrange(date) %>%
+#   filter(date == max(date)) %>%
+#   select(state,pred) %>%
+#   ungroup() %>%
+#   arrange(state)
+
+
+```
+
+
+```{r final-prior-calculation}
+priors = 0.4*national_mu_prior + 0.6*lean_to_prior(leans_states)
 
 jags_data <- list(y=y,t=t,r=r,
                   N_polls=N_polls,N_states=N_states,N_days=N_days,
