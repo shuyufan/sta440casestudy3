@@ -43,9 +43,9 @@ econ_pres_polls = econ_pres_polls %>%
   mutate(state = ifelse(state == "--","US",state),
          y = biden/(biden + trump)*100)
 
-#states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX", "AK", "SC", "MO", "MT", "MS")
+states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX", "AK", "SC", "MO", "MT", "MS")
 
-#econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
+econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
 
 ```
 
@@ -66,6 +66,7 @@ jags_data <- list(y=y,t=t,r=r,
 
 
 
+# old model
 
 ```{r model,eval = TRUE}
 model <- function(){
@@ -136,9 +137,100 @@ hist(BidenWins)
 print(c(quantile(BidenWins, 0.3), quantile(BidenWins, 0.7)))
 ```
 
+# With multivariate formulation
+
+```{r mv_model}
+model_mv <- function(){
+  for(k in 1:N_polls){
+    y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
+    p[k] = theta[r[k],t[k]]
+  }
+  for(j in 2:N_days){
+    theta[1:N_states,j] ~ dmnorm(theta[1:N_states,j-1],Phi)
+  }
+  
+  
+  Phi ~ dwish(states_corr_mat,N_states+1) #fill in wishart parameters, google JAGS wishart distribution should turn it up
+  Sigma = inverse(Phi)
+  #which, Phi or Sigma is the covariance and which is the precision? 
+  
+  #optional: theta[1:N_states,1] ~ dmnorm(mu0,s0) #define mu0 and s0 in your jags_data object
+  
+  #Use your hierarhciacl prior for sigma2_y from before 
+  for(j in 1:N_states){
+      sigma2_y[j] = 1/sigma2_y_inv[j]
+      sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
+      
+      theta[j,1] ~ dnorm(mu0,pow(sigma2_0,-1))
+  }
+  nu_y ~ dunif(0,100)
+  tau_y ~ dunif(0,100)
+  
+  nu_beta ~ dunif(0,100)
+  tau_beta ~ dunif(0,100)
+  
+  mu0 ~ dnorm(50,pow(7.5,-2))
+  sigma2_0 = 1/sigma2_0_inv
+  sigma2_0_inv ~ dgamma(.5,.5)
+}
+```
+
+```{r}
+dex_states_inc = NULL
+for (st in states) {
+  new_dex = which(colnames(state_correlation_matrix)==st)
+  dex_states_inc = c(dex_states_inc, new_dex)
+}
+
+inc_states_corr_matrix = state_correlation_matrix[c(dex_states_inc),c(dex_states_inc)]
+```
+
+
+```{r}
+# states_cov_matrix = as.matrix(read.csv("states_cov_matrix - Sheet1.csv", header = TRUE)[,-1], nrow = 19, byrow = TRUE)
+# isSymmetric(states_cov_matrix)
+# 
+# for (r in 1:19) {
+#   for (c in 1:19) {
+#     if (states_cov_matrix[r,c] != states_cov_matrix[c,r]) {
+#       states_cov_matrix[r,c] = states_cov_matrix[c,r]
+#     }
+#   }
+# }
+# 
+# isSymmetric(states_cov_matrix)
+# states_cov_matrix == t(states_cov_matrix)
+# 
+# write.csv(states_cov_matrix, "states_cov_matrix.csv")
+
+states_cov_matrix = read.csv("states_cov_matrix.csv", header = TRUE)[,-1]
+states_cov_matrix == t(states_cov_matrix)
+eigen(states_cov_matrix)
+```
+
+```{r}
+jags_data$states_corr_mat <- states_cov_matrix#diag(N_states)#test_matrix#inc_states_corr_matrix
+#library(lqmm)
+#test_matrix = make.positive.definite(inc_states_corr_matrix)
+#eigen(inc_states_corr_matrix)
+#eigen(test_matrix)
+#be sure to add your added parameters to parameters.to.save
+jags_sims_mv <- jags(data = jags_data,model.file = model_mv,parameters.to.save = c("theta","Sigma",
+                                                                                "p","sigma2_y"),
+                  n.iter = 10000)
+
+jags_sims_mv
+```
+
+
+
 ## Not required: Probability of Biden Win by State
 
 ```{r}
+elec_sims <- jags_sims_mv$BUGSoutput$sims.list$theta[,,1]
+colnames(elec_sims) <- states
+(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+
 elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
 colnames(elec_sims) <- states
 (elec_sims>50) %>% colMeans() #P(Biden Win) each state
