@@ -78,6 +78,40 @@ N_days <- t %>% max
 ```
 
 ```{r}
+voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
+voter_small = readRDS("ncvoter_Statewide_small.rds")
+
+# grab more columns from the DCC bc 2020 data does not appear to have party_cd
+```
+
+```{r fundamental-part-of-the-prior}
+# ALL OF THIS IS NOT EVEN ACCOUNTING FOR WHAT TO DO WITH OTHER
+
+# this is to get the prob of voting
+binary_model <-
+  brm(data = voter_grouped, family = binomial,
+      votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
+      iter = 2500, warmup = 500, cores = 2, chains = 2,
+      seed = 10)
+repub_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who are 1 for REP)
+democ_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who are 1 for DEM)
+  
+# FOR EACH DISTRICT
+  
+# 1) multiply the above 1xnr (where nr is number of subgroups that have republican tag) by the nrx1 vector of the number of people in each subgroup that include republican = ExpectedRvotes
+  
+# 2) do the above for Democrats
+
+# put 1) over some denominator which is 1)+2)
+# put 2) over some denominator which is 1)+2)
+
+# IF WE CAN FIGURE OUT THE "OTHER" PARTY, and our assumption that the party they register for is the party they vote for is strong (WHICH IT IS STRONG), then for each district, then #(REP)/#(PPL in District) = Republican vote share for that district 
+
+# then we will have vote share for each district aka fundamental
+# and then we can 0.5*fundamental + 0.5*partisan lean = priors (12x1)
+```
+
+```{r}
 # from 538 article on redistricting
 # https://fivethirtyeight.com/features/north-carolinas-new-house-map-hands-democrats-two-seats-but-it-still-leans-republican/
 partisan_leans = as.matrix(c(10, 19, -24, 29, -36, 18, -20, -10, -13, -38, -17, 34, -36))
