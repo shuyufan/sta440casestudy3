@@ -127,9 +127,8 @@ prior_model <- lm(incvote ~  juneapp + q2gdp, data = abramowitz)
 
 # make predictions (for 2020, g2gdp = -9.1, juneapp = -10)
 # keep sources for this! https://www.bea.gov/news/glance
-national_mu_prior <- predict(prior_model,newdata = tibble(q2gdp = -31.4, juneapp = -10))
-
-national_mu_prior <- 100 - predict(prior_model,newdata = tibble(q2gdp = 1.1, juneapp = 4))
+# the predict() alone is for incumbent, so we do 100 - for Biden 
+national_mu_prior <- 100 - predict(prior_model,newdata = tibble(q2gdp = -31.4, juneapp = -10))
 
 # on correct scale
 # national_mu_prior <- national_mu_prior / 100
@@ -150,7 +149,8 @@ national_mu_prior <- 100 - predict(prior_model,newdata = tibble(q2gdp = 1.1, jun
 
 
 ```{r final-prior-calculation}
-priors = 0.4*national_mu_prior + 0.6*lean_to_prior(leans_states)
+# because partisan lean is in terms of democ
+priors = 0.1*national_mu_prior + 0.9*lean_to_prior(leans_states)
 
 jags_data <- list(y=y,t=t,r=r,
                   N_polls=N_polls,N_states=N_states,N_days=N_days,
