@@ -24,11 +24,25 @@ senate_polls = read.csv("senate_polls.csv")
 states_fixed = as.character(senate_polls$state)
 states_fixed[which(senate_polls$race_id == "7780")] = "Georgia-Special"
 
-# test = senate_polls[which(senate_polls$race_id == "7780"),]
-# 
-# test2 = test %>% group_by(question_id, candidate_party) %>% summarise(x = sum(pct), summarize_each())
-
 senate_polls$state = as.factor(states_fixed)
+
+
+# Dealing with Georgia Special Election
+
+test = senate_polls[which(senate_polls$race_id == "7780"),]
+ 
+test2 = test %>% group_by(question_id, candidate_party) %>% summarise(pct = sum(pct)) %>% filter(candidate_party %in% c("DEM", "REP"))
+
+test3 = test[!duplicated(test$question_id),] %>% select(-c("candidate_party", "pct"))
+
+test4 = merge(test3, test2, by = "question_id")
+
+#senate_polls$state = as.factor(states_fixed)
+
+
+senate_polls = senate_polls %>% filter(!(state == "Georgia-Special"))
+
+senate_polls = rbind(senate_polls, test4)
 
 dem_results = senate_polls[senate_polls$candidate_party == "DEM",]
 dem_cols = colnames(dem_results)
@@ -47,13 +61,13 @@ final_polls = left_join(dem_results, rep_small, by="question_id")
 
 final_polls$days_to_election = as.numeric(as.Date("11/3/2020", "%m/%d/%y")-as.Date(final_polls$end_date, "%m/%d/%y"))
 
-final_polls = final_polls %>% filter(days_to_election <= 90)
+final_polls = final_polls %>% filter(days_to_election <= 60)
 
 safe_dem = c("Massachusetts", "Rhode Island", "Delaware", "New Hampshire", "New Jersey", "Oregon", "Illinois", "Virginia")
 
 safe_rep = c("Arkansas", "Wyoming", "Nebraska", "South Dakota", "West Virginia", "Idaho", "Oklahoma", "Tennessee", "Louisiana", "Kentucky", "Mississippi")
 
-final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) %>% filter(!(state == "Georgia-Special"))
+final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
 
 final_polls$votes_DEM = round( (final_polls$pct_DEM/100) * final_polls$sample_size)
 final_polls$votes_REP = round( (final_polls$pct_REP/100) * final_polls$sample_size)
