@@ -1,0 +1,51 @@
+State,Abbrev,CookPVI,Lean
+Alabama,AL,R+14,-14
+Alaska,AK,R+9,-9
+Arizona,AZ,R+5,-5
+Arkansas,AR,R+15,-15
+California,CA,D+12,12
+Colorado,CO,D+1,1
+Connecticut,CT,D+6,6
+Delaware,DE,D+6,6
+Florida,FL,R+2,-2
+Georgia,GA,R+5,-5
+Hawaii,HI,D+18,18
+Idaho,ID,R+19,-19
+Illinois,IL,D+7,7
+Indiana,IN,R+9,-9
+Iowa,IA,R+3,-3
+Kansas,KS,R+13,-13
+Kentucky,KY,R+15,-15
+Louisiana,LA,R+11,-11
+Maine,ME,D+3,3
+Maryland,MD,D+12,12
+Massachusetts,MA,D+12,12
+Michigan,MI,D+1,1
+Minnesota,MN,D+1,1
+Mississippi,MS,R+9,-9
+Missouri,MO,R+9,-9
+Montana,MT,R+11,-11
+Nebraska,NE,R+14,-14
+Nevada,NV,D+1,1
+New Hampshire,NH,EVEN,0
+New Jersey,NJ,D+7,7
+New Mexico,NM,D+3,3
+New York,NY,D+12,12
+North Carolina,NC,R+3,-3
+North Dakota,ND,R+17,-17
+Ohio,OH,R+3,-3
+Oklahoma,OK,R+20,-20
+Oregon,OR,D+5,5
+Pennsylvania,PA,EVEN,0
+Rhode Island,RI,D+10,10
+South Carolina,SC,R+8,-8
+South Dakota,SD,R+14,-14
+Tennessee,TN,R+14,-14
+Texas,TX,R+8,-8
+Utah,UT,R+20,-20
+Vermont,VT,D+15,15
+Virginia,VA,D+1,1
+Washington,WA,D+7,7
+West Virginia,WV,R+19,-19
+Wisconsin,WI,EVEN,0
+Wyoming,WY,R+25,-25
