@@ -70,7 +70,6 @@ jags_data <- list(y=y,t=t,r=r,
 
 ```{r model,eval = TRUE}
 model <- function(){
-  
   for(k in 1:N_polls){
     y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
     p[k] = beta[r[k],t[k]] 
@@ -78,6 +77,16 @@ model <- function(){
   
   for(j in 2:N_days){
     for(i in 1:N_states){
+      for (q in 1:100) {
+        # HOW TO GET POSTERIOR PRED DISTRIBUTION?
+        betaq[i,j,q] ~ dnorm(betaq[i,j-1,q],pow(sigma2_beta[i],-1))
+        compare1[i,j,q] <- ifelse(betaq[i,j,q] > 50, 1, 0)
+      }
+      beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+      BidenWins[i,j] <- sum(compare1[i,j,])/100
+    }
+  }
+
       beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
     }
   }
@@ -112,7 +121,6 @@ model <- function(){
   mu0 ~ dnorm(50,pow(7.5,-2))
   sigma2_0 = 1/sigma2_0_inv
   sigma2_0_inv ~ dgamma(.5,.5)
-  
   
 }
 ```
