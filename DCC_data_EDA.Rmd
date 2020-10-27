@@ -81,9 +81,6 @@ summary(voter_hist)
 # also if someone doesn't put in race they also don't input ethnicity
 ```
 
-# Merge
 
-```{r}
-#left_join(voter_registr, voter_hist, by = c("county_id", "voter_reg_num"))
-```
+
 

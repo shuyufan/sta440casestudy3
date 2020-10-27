@@ -16,7 +16,7 @@ library(R2jags)
 ```
 
 ## Data
-```{r}
+```{r eval=FALSE}
 pres_polls = read.csv("president_polls.csv")
 
 pres_polls$days_to_election = as.numeric(as.Date(pres_polls$election_date, "%m/%d/%y")-as.Date(pres_polls$end_date, "%m/%d/%y"))
@@ -24,7 +24,9 @@ pres_polls$days_to_election = as.numeric(as.Date(pres_polls$election_date, "%m/%
 
 ```{r}
 
-econ_pres_polls = read.csv("2020 US presidential election polls - all_polls (1).csv")
+econ_pres_polls = read.csv("2020 US presidential election polls - all_polls.csv")
+
+econ_pres_polls$end.date = as.character(econ_pres_polls$end.date)
 
 econ_pres_polls = econ_pres_polls %>%
   mutate(end.date = case_when(
@@ -34,17 +36,21 @@ econ_pres_polls = econ_pres_polls %>%
 
 econ_pres_polls$days_to_election = as.numeric(as.Date("11/3/2020", "%m/%d/%y")-as.Date(econ_pres_polls$end.date, "%m/%d/%y"))
 
+econ_pres_polls$state = as.character(econ_pres_polls$state)
 
 econ_pres_polls = econ_pres_polls %>%
   filter(days_to_election <= 90) %>%
   mutate(state = ifelse(state == "--","US",state),
          y = biden/(biden + trump)*100)
 
+states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX", "AK", "SC", "MO", "MT", "MS")
+
+econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
 
 ```
 
 ```{r}
-states <- econ_pres_polls$state %>% unique
+states <- sort(econ_pres_polls$state %>% unique)
 
 y <- econ_pres_polls$y
 r <- match(econ_pres_polls$state,states)
@@ -60,6 +66,7 @@ jags_data <- list(y=y,t=t,r=r,
 
 
 
+# old model
 
 ```{r model,eval = TRUE}
 model <- function(){
@@ -79,7 +86,22 @@ model <- function(){
       BidenWins[i,j] <- sum(compare1[i,j,])/100
     }
   }
-  
+
+      beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+    }
+  }
+
+  # for(j in 2:N_days){
+  #   for(i in 1:N_states){
+  #     for (q in 1:100){
+  #     #HOW TO GET POSTERIOR PRED DISTRIBUTION?
+  #       betaq[i,j,q] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+  #       compare1[i,j,q] <- ifelse(betaq[i,j,q] > 50, 1, 0)
+  #     }
+  #    beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+  #    BidenWins[i,j] <- sum(compare1[i,j,])/100
+  #   }
+  # }
   #EXERCISE: add hierarchical prior for sigma2_beta and sigma2_y, i.e. sigma2_beta[j] all come from a common distribution 
   for (j in 1:N_states){
       sigma2_y[j] = 1/sigma2_y_inv[j]
@@ -113,30 +135,136 @@ jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("be
 
 ```
 
-```{r}
+```{r eval=FALSE}
 jags_sims$BUGSoutput
 
 BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
 
 hist(BidenWins)
 
-print(c(quantile(BidenWins, 0.2), quantile(BidenWins, 0.8)))
+print(c(quantile(BidenWins, 0.3), quantile(BidenWins, 0.7)))
+```
+
+# With multivariate formulation
+
+```{r mv_model}
+model_mv <- function(){
+  for(k in 1:N_polls){
+    y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
+    p[k] = theta[r[k],t[k]]
+  }
+  for(j in 2:N_days){
+    theta[1:N_states,j] ~ dmnorm(theta[1:N_states,j-1],Phi)
+  }
+  
+  
+  Phi ~ dwish(states_corr_mat,N_states+1) #fill in wishart parameters, google JAGS wishart distribution should turn it up
+  Sigma = inverse(Phi)
+  #which, Phi or Sigma is the covariance and which is the precision? 
+  
+  #optional: theta[1:N_states,1] ~ dmnorm(mu0,s0) #define mu0 and s0 in your jags_data object
+  
+  #Use your hierarhciacl prior for sigma2_y from before 
+  for(j in 1:N_states){
+      sigma2_y[j] = 1/sigma2_y_inv[j]
+      sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
+      
+      theta[j,1] ~ dnorm(mu0,pow(sigma2_0,-1))
+  }
+  nu_y ~ dunif(0,100)
+  tau_y ~ dunif(0,100)
+  
+  nu_beta ~ dunif(0,100)
+  tau_beta ~ dunif(0,100)
+  
+  mu0 ~ dnorm(50,pow(7.5,-2))
+  sigma2_0 = 1/sigma2_0_inv
+  sigma2_0_inv ~ dgamma(.5,.5)
+}
 ```
 
 ```{r}
+dex_states_inc = NULL
+for (st in states) {
+  new_dex = which(colnames(state_correlation_matrix)==st)
+  dex_states_inc = c(dex_states_inc, new_dex)
+}
+
+inc_states_corr_matrix = state_correlation_matrix[c(dex_states_inc),c(dex_states_inc)]
+```
+
+
+```{r}
+# states_cov_matrix = as.matrix(read.csv("states_cov_matrix - Sheet1.csv", header = TRUE)[,-1], nrow = 19, byrow = TRUE)
+# isSymmetric(states_cov_matrix)
+# 
+# for (r in 1:19) {
+#   for (c in 1:19) {
+#     if (states_cov_matrix[r,c] != states_cov_matrix[c,r]) {
+#       states_cov_matrix[r,c] = states_cov_matrix[c,r]
+#     }
+#   }
+# }
+# 
+# isSymmetric(states_cov_matrix)
+# states_cov_matrix == t(states_cov_matrix)
+# 
+# write.csv(states_cov_matrix, "states_cov_matrix.csv")
+
+states_cov_matrix = read.csv("states_cov_matrix.csv", header = TRUE)[,-1]
+states_cov_matrix == t(states_cov_matrix)
+eigen(states_cov_matrix)
+```
+
+```{r}
+jags_data$states_corr_mat <- states_cov_matrix#diag(N_states)#test_matrix#inc_states_corr_matrix
+#library(lqmm)
+#test_matrix = make.positive.definite(inc_states_corr_matrix)
+#eigen(inc_states_corr_matrix)
+#eigen(test_matrix)
+#be sure to add your added parameters to parameters.to.save
+jags_sims_mv <- jags(data = jags_data,model.file = model_mv,parameters.to.save = c("theta","Sigma",
+                                                                                "p","sigma2_y"),
+                  n.iter = 10000)
+
+jags_sims_mv
+```
+
+
+
+## Not required: Probability of Biden Win by State
+
+```{r}
+elec_sims <- jags_sims_mv$BUGSoutput$sims.list$theta[,,1]
+colnames(elec_sims) <- states
+(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+
 elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
 colnames(elec_sims) <- states
 (elec_sims>50) %>% colMeans() #P(Biden Win) each state
 
 #in other states: Biden: 232-13, Trump: 306-29-18-15-10-20
 #b_ex_votes <- 232-13; t_ex_votes <- 306-29-18-15-10-20
+```
 
-ec_votes_inc_states <- ((elec_sims>50) %*% diag(c(20, 10, 0, 16, 3, 6, 6, 18, 16, 14, 11, 29, 15, 38, 4, 10, 9, 10, 10, 5, 3, 4, 5, 6, 3, 29, 7, 6, 55, 3, 8, 13, 12, 3, 8, 6, 9, 9, 11, 7, 4, 11))) %>% rowSums() #+ 232
+## Probability Trump Wins Re-Election
 
-ec_votes = ec_votes_inc_states+7+4+20+4+3 #anything else Biden should win (CT, Hawaii, IL, RI) #DC
+```{r}
+ec_bystate = c(3, 9, 11, 55, 9, 3, 29, 16, 4, 6, 4, 11, 6, 8, 8, 11, 10, 4, 16, 10, 10, 6, 3, 15, 3, 4, 14, 5, 6, 29, 18, 7, 7, 20, 9, 3, 38, 0, 6, 11, 3, 12, 10, 5 )
+
+ec_votes_inc_states <- ((elec_sims>50) %*% diag(ec_bystate)) %>% rowSums() #+ 232
+
+ec_votes_dem = ec_votes_inc_states+7+4+20+4+3 #anything else Biden should win (CT, Hawaii, IL, RI, DC)
 
 # anything else for Trump (6 Arkansas, 5 Nebraska, 11 Tennessee, 3 S Dakota, 3 Wyoming) 
 
+p_trump_win = 1 - mean(ec_votes_dem >= 270)
+p_trump_win
+```
+
+## More bonus stuff
+
+```{r}
 hist(ec_votes)
 
 pmean = ec_votes>=270
@@ -144,8 +272,13 @@ mean(ec_votes>=270)
 print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
 ```
 
-```{r}
+```{r eval=FALSE}
 house_polls = read.csv("house_polls.csv")
 nc_house_polls = house_polls %>%
   filter(state == "North Carolina")
+```
+
+```{r eval=FALSE}
+voter_small = readRDS("ncvoter_Statewide_small.rds")
+hist_small = readRDS("ncvhis_Statewide_small.rds")
 ```
