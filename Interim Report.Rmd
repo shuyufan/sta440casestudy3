@@ -209,11 +209,11 @@ Due to the lack of strong prior knowledge, we will use `brm` function's default 
 
 In a later section, we will compare this Bayesian model with two additional models: one is a frequentist logistic regression model with the same predictors and interactions and the other is a similar Bayesian model with an additional random effect at the congressional district level. In this way, we hope to assess if the Bayesian framework is superior to a frequentist approach when predicting voter turnout and if there is any salient unexplained variation within each congressional district. 
 
-```{r run-brms-model, include = F, warning = F, message = F, save_warmup = FALSE}
+```{r run-brms-model, cache = T, include = F, warning = F, message = F}
 binary_model <-
   brm(data = voter_grouped, family = binomial,
       votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
-      iter = 2500, warmup = 500, 
+      iter = 2500, warmup = 500, cores = 2, chains = 2,
       seed = 10)
 #summary(binary_model)
 #saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
@@ -308,7 +308,7 @@ We can interpret each point in the left plot of Figure \ref{bothinterp} as follo
 
 # Model Validation
 
-```{r k-fold-diff-ks, echo = F, warning = F, message = F, include = F}
+```{r k-fold-diff-ks, echo = F, cache = T, warning = F, message = F, include = F}
 # Validation & diagnostics start below ------------------------------
 # 3-fold & 5-fold CV
 set.seed(123)
