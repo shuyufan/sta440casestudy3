@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
 library(tidyverse)
 library(R2jags)
+library(gridExtra)
 ```
 
 ## Data
@@ -326,4 +327,24 @@ mean(ec_votes_dem>=270)
 #print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
 ```
 
+# Traceplots
+
+```{r}
+betas_day_of_election = sapply(1:14, function(i) {paste0("theta.", i, ".1.")} )
+parameters = c(betas_day_of_election) # what else do we want to look at?
+
+#traceplot(jags_sims_mv,  varname = "theta")
+
+tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+# colnames(tp_vars) <- gsub("^.*\\.","", colnames(tp_vars))
+
+tps <- function(var){
+  ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
+    geom_line() +
+    labs(x ="Iterations", y = as.name(var))
+}
+
+all_beta_trace = lapply(names(tp_vars), tps)
+do.call(grid.arrange, all_beta_trace)
+```
 
