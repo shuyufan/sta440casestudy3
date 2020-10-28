@@ -108,9 +108,9 @@ county2district <- voter_regis_2020 %>%
 
 # test = voter_regis_2020 %>%
 #   filter(county_desc %in% c("CATAWBA", "FORSYTH", "HARNETT", "IREDELL", "LEE", "MOORE", "WAKE") &
-#            is.na(cong_dist_abbrv)) #%>%
-#   # group_by(county_desc) %>%
-#   # summarise(n = n())
+#   is.na(cong_dist_abbrv)) %>%
+#   group_by(county_desc) %>%
+#   summarise(n = n())
 
 # make decision based on where the majority of the county is
 county2district = county2district %>%
