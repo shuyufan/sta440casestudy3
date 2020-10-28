@@ -160,7 +160,7 @@ voter_hist_districts_resp$race_code = relevel(as.factor(voter_hist_districts_res
 
 voter_hist_districts_resp = voter_hist_districts_resp %>%
   select(-voted_party_desc, -voted_county_desc)
-```
+``` 
 
 # Write to rds
 
@@ -173,6 +173,43 @@ saveRDS(voter_hist_districts_resp, "filtered_ncvoterhis_resp.rds")
 ```{r}
 voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
 ```
+
+# Clean up Cong modeling data
+```{r}
+ncvoter_Cong_small <- readRDS("~/STA440/sta440casestudy3/ncvoter_Cong_small.rds")
+ncvoter_Cong_small <- ncvoter_Cong_small %>% 
+  select(-c("voter_reg_num","reason_cd","ethnic_code","birth_state","drivers_lic","registr_dt","birth_year"))
+ncvoter_Cong_small <- ncvoter_Cong_small %>% 
+  select(-c("ncid","status_cd","zip_code"))
+
+ncvoter_Cong_small <- ncvoter_Cong_small %>% 
+  filter(voter_status_desc=="ACTIVE")
+saveRDS(ncvoter_Cong_small,"~/STA440/sta440casestudy3/ncvoter_1027_small.rds")
+```
+
+```{r cleanup snapshot 2016}
+library(tidyverse)
+VR2016 <- readRDS("VR_2016.rds")
+format(object.size(VR2016),units = "Gb")
+#only keep active registrations
+#ncvoter.dt <- ncvoter.dt[voter_status_desc == "ACTIVE",]
+#only keep subset of variables
+minimial_vars <- c("county_id","county_desc",
+                   "status_cd","voter_status_desc","voter_status_reason_desc",
+                   "race_code","birth_age","cong_dist_abbrv","birth_year")
+format(object.size(VR2016[,..minimial_vars]),units = "Gb")
+object.size(VR2016[,..minimial_vars])/object.size(VR2016)
+
+saveRDS(VR2016[,..minimial_vars],"VR2016_small.rds")
+```
+
+```{r read small 2016}
+VR2016_small <- readRDS("VR2016_small.rds")
+VR2016_small %>%
+  group_by(status_cd) %>%
+  summarise(n = n())
+```
+
 
 
 # grouping into subgroups (data munging)
