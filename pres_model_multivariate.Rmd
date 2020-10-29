@@ -330,13 +330,10 @@ mean(ec_votes_dem>=270)
 # Traceplots
 
 ```{r}
-betas_day_of_election = sapply(1:14, function(i) {paste0("theta.", i, ".1.")} )
-parameters = c(betas_day_of_election) # what else do we want to look at?
-
-#traceplot(jags_sims_mv,  varname = "theta")
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+parameters = c(betas_day_of_election)
 
 tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
-# colnames(tp_vars) <- gsub("^.*\\.","", colnames(tp_vars))
 
 tps <- function(var){
   ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
