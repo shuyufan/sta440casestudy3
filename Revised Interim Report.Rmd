@@ -483,7 +483,7 @@ As part of our sensitivity analysis, we fit a model with identical predictor var
 
 We also fit another model with random intercept and slopes with all of the predictors for congressional districts to capture possible variation between voters in different geographic parts of North Carolina. The coefficients for the main effects (included in the Appendix, along with group-level standard deviation) look largely the same compared to the main model, with the exception that the coefficients for income are slightly different in the two models. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(cong_dist_rand_eff_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`). Although the RMSE when predicting on 2012 data for the random effects model (`r rmse(cong_dist_rand_eff$data$votes, yrep = fitted)`) is better, we ultimately decided to keep the main effects model because of the higher level of stability in its coefficients. The main effects model also had smaller residuals and better coverage (see Appendix for residual plot and coverage plot for the random effects model). 
 
-*TODO: see interpretations*
+With the addition of random slopes, we see that for black race, congressional districts 1, 2, 8, 10, and 11 have random slopes that are significant (determined by the fact that their 95% CI's do not contain zero). Looking at both main and random effects, holding all other variables at baseline, the expected odds of voting increases by a multiplicative factor for black people from districts 8 and 10, while those odds decreases by a multiplicative factor for black people from districts 1, 2, and 11. For the 45-59 age group, the random slopes for districts 2, 3, 4, 7, 8, 9, and 11 are significant, and the expected odds of voting increases by a multiplicative factor for 45-59 year-olds from those districts, holding all else at baseline. For the Republican party, random slopes for districts 2, 4, 5, 8, 10, and 13 are significant, and the expected odds of voting increases by a multiplicative factor for Republicans in those districts, holding all else at baseline.
 
 Finally, since all of the models discussed above were fit using a Bayesian framework via the \texttt{brms} package, we decided to fit a frequentist model for comparison. The model output (included in the Appendix) shows little difference from the results of our main Bayesian model.
 
@@ -844,8 +844,6 @@ kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"race_codeBlack"],2)),
 kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"age_binned45M59"],2)), caption = "Age 45-59 Random Slope")
 kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"party_cdREP"],2)), caption = "Party Republican Random Slope")
 ```
-
-*TODO: Three minimal sentences for 2 pts*
 
 ```{r, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Coverage Plot for Random Effects Model"}
 voter_grouped = voter_hist_districts_resp %>%
