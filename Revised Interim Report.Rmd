@@ -145,7 +145,7 @@ voter_hist_districts_resp  = voter_hist_districts_resp  %>%
 voter_grouped$voterpercent <- voter_grouped$votes / voter_grouped$n
 ```
 
-```{r make cong dist}
+```{r make cong dist, include = F}
 voter_cong = voter_hist_districts_resp %>%
   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
   summarise(n = n(), votes = sum(vote_or_not))
@@ -156,7 +156,7 @@ voter_cong %>%
 voter_cong$voterpercent <- voter_cong$votes / voter_cong$n
 ```
 
-```{r EDA cong, echo=F}
+```{r EDA cong, echo=F, fig.height = 4, fig.width = 8}
 ggplot(voter_cong, aes(x = cong_dist_abbrv, y = voterpercent)) + geom_boxplot(aes(fill = party_cd)) + labs(y="Turnout Percentage", x = "Congressional District", title = "Voter Turnout for Different Congressional Districts", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
 ```
 
@@ -396,7 +396,7 @@ voter_grouped %>%
 
 Most of the standardized residuals (shown in Figure 4) are within $\pm$ 2, but some points have somewhat larger values. This means that for the majority of the groups, the model predicts fairly well. 
 
-```{r external-validation, fig.width = 8, fig.height = 4, echo = F, message = F, warning = F}
+```{r external-validation, fig.width = 8, fig.height = 4, include = F, message = F, warning = F}
 grouped_voters_2012 = readRDS("grouped_voter_data_2012.rds")
 
 grouped_voters_2012 = grouped_voters_2012 %>%
@@ -432,7 +432,7 @@ cong_dist_rand_eff_aic = cong_dist_rand_eff_waic_obj$estimates[3,1]
 ```
 
 
-```{r extern-validation}
+```{r extern-validation, include = F}
 
 voters_2012 = readRDS("filtered_ncvoterhis_resp_binned_2012.rds")
 
@@ -464,6 +464,11 @@ grouped_voters_2012 = grouped_voters_2012 %>%
     TRUE ~ med_inc_binned
   ))
 
+rmse <- function(y, yrep) {
+  #yrep_mean <- colMeans(yrep)
+  sqrt(mean((yrep - y)^2))
+}
+
 # 2012 validation for randeff model
 extern_est_randeff_model = predict(cong_dist_rand_eff, grouped_voters_2012, type = "response")[,1]
 extern_rmse_randeff_model = sqrt(mean((extern_est_randeff_model - grouped_voters_2012$votes)^2))
@@ -481,7 +486,7 @@ extern_rmse_randeff_model = sqrt(mean((extern_est_randeff_model - grouped_voters
 
 As part of our sensitivity analysis, we fit a model with identical predictor variables to our main model but with different priors. Based on literature review, we chose normal priors for the main effects that aligned with expectations that older voters tend to vote more often (McDonald, 2020), men tend to vote less often than women (Igielnik, 2020), party-unaffiliated voters tend to vote less often (Killian, 2012), and wealth tends to correlate positively with voter turnout (Akee, 2019). For these main effects, we chose the normal priors to have means somewhere between 0.5 and 1, and we chose a variance of 3. For all other terms (including interactions and intercept), we chose normal priors with a mean of 0 and a variance of 3. Changing these priors had minimal effect on the resulting coefficients and confidence intervals (see model output in Appendix).
 
-We also fit another model with random intercept and slopes with all of the predictors for congressional districts to capture possible variation between voters in different geographic parts of North Carolina. The coefficients for the main effects (included in the Appendix, along with group-level standard deviation) look largely the same compared to the main model, with the exception that the coefficients for income are slightly different in the two models. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(cong_dist_rand_eff_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`). Although the RMSE when predicting on 2012 data for the random effects model (`r rmse(cong_dist_rand_eff$data$votes, yrep = fitted)`) is better, we ultimately decided to keep the main effects model because of the higher level of stability in its coefficients. The main effects model also had smaller residuals and better coverage (see Appendix for residual plot and coverage plot for the random effects model). 
+We also fit another model with random intercept and slopes with all of the predictors for congressional districts to capture possible variation between voters in different geographic parts of North Carolina. The coefficients for the main effects (included in the Appendix, along with group-level standard deviation) look largely the same compared to the main model, with the exception that the coefficients for income are slightly different in the two models. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(cong_dist_rand_eff_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`). Although the RMSE when predicting on 2012 data for the random effects model (`r extern_rmse_randeff_model`) is better, we ultimately decided to keep the main effects model because of the higher level of stability in its coefficients. The main effects model also had smaller residuals and better coverage (see Appendix for residual plot and coverage plot for the random effects model). 
 
 With the addition of random slopes, we see that for black race, congressional districts 1, 2, 8, 10, and 11 have random slopes that are significant (determined by the fact that their 95% CI's do not contain zero). Looking at both main and random effects, holding all other variables at baseline, the expected odds of voting increases by a multiplicative factor for black people from districts 8 and 10, while those odds decreases by a multiplicative factor for black people from districts 1, 2, and 11. For the 45-59 age group, the random slopes for districts 2, 3, 4, 7, 8, 9, and 11 are significant, and the expected odds of voting increases by a multiplicative factor for 45-59 year-olds from those districts, holding all else at baseline. For the Republican party, random slopes for districts 2, 4, 5, 8, 10, and 13 are significant, and the expected odds of voting increases by a multiplicative factor for Republicans in those districts, holding all else at baseline.
 
@@ -826,7 +831,7 @@ kable(coef_table2)
 
 ## Model with Random Effect for Congressional District
 
-```{r echo=FALSE}
+```{r echo=FALSE, message = F, warning = F}
 #summary(randeff_model)
 
 coef_table3 = round(fixef(cong_dist_rand_eff),2)
@@ -838,22 +843,27 @@ group_sd_obj = VarCorr(cong_dist_rand_eff)
 group_sd = group_sd_obj$cong_dist_abbrv$sd[1]
 ```
 
-```{r}
+```{r, echo = F, message = F, warning = F}
 rand_slopes = ranef(cong_dist_rand_eff)
 kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"race_codeBlack"],2)), caption = "Race Black Random Slope")
 kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"age_binned45M59"],2)), caption = "Age 45-59 Random Slope")
 kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"party_cdREP"],2)), caption = "Party Republican Random Slope")
 ```
 
-```{r, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Coverage Plot for Random Effects Model"}
+```{r, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Coverage Plot for Random Effects Model", message = F, warning = F}
 voter_grouped = voter_hist_districts_resp %>%
+  mutate(med_inc_binned = as.character(med_inc_binned)) %>%
+  mutate(med_inc_binned = case_when(
+    as.character(med_inc_binned) == "46864 - 52798" ~ '46864 _ 52798',
+    as.character(med_inc_binned) == "52798 - 64509" ~ '52798 _ 64509',
+    TRUE ~ med_inc_binned)) %>%
   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
   summarise(n = n(), votes = sum(vote_or_not))
 
 d <-
   voter_grouped %>% 
   ungroup() %>% 
-  mutate(case = factor(1:nrow(voter_grouped))) # all the different cases (e.g. B race AND R party AND <29 age, etc. essentially each row)
+  mutate(case = factor(1:nrow(voter_grouped))) 
 
 p <-
   predict(cong_dist_rand_eff) %>%
@@ -873,12 +883,12 @@ dot = ggplot(data = d, aes(x = case, y = votes / n)) +
 dot
 ```
 
-```{r resids-randeff, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Random Effects Model Residual Plot"}
+```{r resids-randeff, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Random Effects Model Residual Plot", message = F, warning = F}
 # Residuals
 
 voter_grouped %>%
   add_residual_draws(cong_dist_rand_eff) %>%
-  ggplot(aes(x = resids, y = std.resids)) +
+  ggplot(aes(x = .row, y = .residual/sqrt(var(.residual)))) +
   stat_pointinterval() + 
   geom_hline(yintercept = 0, color="red") + 
   labs(x = "Group", y = "Standardized Residuals")
@@ -888,18 +898,18 @@ voter_grouped %>%
 
 ## Frequentist Model
 
-```{r include=FALSE, cache = T}
+```{r include=FALSE, cache = T, message = F, warning = F}
 freq_model = glm(cbind(votes, n-votes) ~ med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned, data=voter_grouped, family="binomial")
 ```
 
-```{r include=FALSE}
+```{r include=FALSE, message = F, warning = F}
 freq_summary = summary(freq_model)
 freq_coefs = freq_summary$coefficients[,1:2]
 #list(summary(freq_model))
 freq_ci = confint(freq_model)
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, message = F, warning = F}
 freq_output = cbind(freq_coefs, freq_ci)
 kable(freq_output, digits=2) 
 ```
