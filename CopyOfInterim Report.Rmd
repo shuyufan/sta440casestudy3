@@ -395,10 +395,17 @@ std.resids = resids/sqrt(var(resids))
 voter_grouped$std.resids = std.resids
 
 voter_grouped %>%
+<<<<<<< HEAD
   add_residual_draws(cong_dist_rand_eff) %>%
   #ggplot(aes(x = resids, y = std.resids)) +
   #geom_point() +
   stat_pointinterval() + 
+=======
+  #add_residual_draws(cong_dist_rand_eff) %>%
+  ggplot(aes(x = resids, y = std.resids)) +
+  geom_point() +
+  #stat_point() + 
+>>>>>>> 7e8d577fbd073b6fb859f17a80ce4ba5cc7ed435
   geom_hline(yintercept = 0, color="red") + 
   labs(x = "Group", y = "Standardized Residuals")
 ```
