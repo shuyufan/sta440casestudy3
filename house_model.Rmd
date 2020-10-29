@@ -113,6 +113,7 @@ voter_regis_2020 <- voter_regis_2020 %>%
 # Filter missing districts
 
 ```{r, eval = F}
+# note that there are still 573 ppl filtered out, but this makes up alomost 0% of the regis voters in 2020
 voter_regis_2020 <- voter_regis_2020 %>% 
   filter(!is.na(cong_dist_abbrv))
 ```
@@ -388,5 +389,23 @@ for (i in 1:length(districts)) {
   print(rep_intervals[1,i])
   cat("\n")
 }
+```
+
+# Traceplots
+
+```{r}
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+parameters = c(betas_day_of_election)
+
+tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+
+tps <- function(var){
+  ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
+    geom_line() +
+    labs(x ="Iterations", y = as.name(var))
+}
+
+all_beta_trace = lapply(names(tp_vars), tps)
+do.call(grid.arrange, all_beta_trace)
 ```
 
