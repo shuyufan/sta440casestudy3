@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Libraries
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE, message=F, warning=F}
 library(lubridate)
 library(tidyverse)
 library(R2jags)
@@ -123,13 +123,22 @@ lean_to_prior = function(lean) {
 
 # calculate the fundamentals part of the prior
 # read in abramowitz data
-abramowitz <- read.csv('abramowitz_data.csv') # %>% filter(year < 2016)
-prior_model <- lm(incvote ~  juneapp + q2gdp, data = abramowitz)
+# abramowitz <- read.csv('abramowitz_data.csv') 
+# prior_model <- lm(incvote ~  juneapp + q2gdp, data = abramowitz)
+
+# read in abramowitz_additional data
+abramowitz <- read.csv('abramowitz_additional.csv') 
+prior_model <- lm(incvote ~  juneapp + three_month_stock_growth + q2_real_income_growth, data = abramowitz)
 
 # make predictions (for 2020, g2gdp = -9.1, juneapp = -10)
 # keep sources for this! https://www.bea.gov/news/glance
 # the predict() alone is for incumbent, so we do 100 - for Biden 
-national_mu_prior <- 100 - predict(prior_model,newdata = tibble(q2gdp = -31.4, juneapp = -10))
+# with juneapp + q2gdp as predictors 
+# national_mu_prior <- 100 - predict(prior_model,newdata = tibble(q2gdp = -31.4, juneapp = -10))
+
+# with juneapp + three_month_stock_growth + q2_real_income_growth as predictors
+### need to update on stock data on Nov 1 ###
+national_mu_prior <- 100 - predict(prior_model,newdata = tibble(juneapp = -10, three_month_stock_growth = -0.0280759, q2_real_income_growth = 11.8))
 
 # on correct scale
 # national_mu_prior <- national_mu_prior / 100
