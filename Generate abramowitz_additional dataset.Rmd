@@ -30,6 +30,9 @@ stock_data_filtered <- stock_data %>%
   filter(year %in% presidential_year)
 
 # calculate stock growth 3 months (Sep 1 - Nov 1) prior to the presidential election 
+# FORBES: When returns were positive, the incumbent party wins. 
+# If the index suffered losses in the three-month window, the incumbent loses.
+# https://www.forbes.com/sites/kristinmckenna/2020/08/18/heres-how-the-stock-market-has-performed-before-during-and-after-presidential-elections/#49281ba94f86 
 stock_growth = NULL
 for(i in 1:length(presidential_year)) {
   yr = presidential_year[i]
