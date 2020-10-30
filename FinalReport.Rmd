@@ -1,18 +1,7 @@
 ---
-title: "FinalReport"
-author: "Lynn Fan"
-date: "10/28/2020"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
----
-title: "Interim Report: Who Votes in NC?"
+title: "Final Report: Election Prediction"
 author: "Alexander Bendeck, Lynn Fan, Cathy Lee, Alice Liao, Justina Zou"
-date: "24 October 2020"
+date: "28 October 2020"
 fontsize: 11pt
 geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
 output: 
