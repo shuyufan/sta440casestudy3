@@ -13,24 +13,15 @@ knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
 library(tidyverse)
 library(R2jags)
+library(brms)
 ```
 
 ## Data
 
-```{r}
-
+```{r read-and-clean-polls}
 house_polls = read.csv("house_polls.csv")
 
 house_nc = house_polls %>% filter(state=="North Carolina", cycle==2020)
-
-# states_fixed = as.character(senate_polls$state)
-# states_fixed[which(senate_polls$race_id == "7780")] = "Georgia-Special"
-
-# test = senate_polls[which(senate_polls$race_id == "7780"),]
-# 
-# test2 = test %>% group_by(question_id, candidate_party) %>% summarise(x = sum(pct), summarize_each())
-
-# senate_polls$state = as.factor(states_fixed)
 
 dem_results = house_nc[house_nc$candidate_party == "DEM",]
 dem_cols = colnames(dem_results)
@@ -46,18 +37,10 @@ colnames(rep_results) = rep_cols
 rep_small = rep_results %>% select(question_id, candidate_id_REP, candidate_name_REP, pct_REP)
 
 final_polls = left_join(dem_results, rep_small, by="question_id")
-```
 
-```{r}
 final_polls$days_to_election = as.numeric(as.Date("11/3/2020", "%m/%d/%y")-as.Date(final_polls$end_date, "%m/%d/%y"))
 
 final_polls = final_polls %>% filter(days_to_election <= 115)
-
-# safe_dem = c("Massachusetts", "Rhode Island", "Delaware", "New Hampshire", "New Jersey", "Oregon", "Illinois", "Virginia")
-# 
-# safe_rep = c("Arkansas", "Wyoming", "Nebraska", "South Dakota", "West Virginia", "Idaho", "Oklahoma", "Tennessee", "Louisiana", "Kentucky", "Mississippi")
-# 
-# final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) %>% filter(!(state == "Georgia-Special"))
 
 final_polls$votes_DEM = round( (final_polls$pct_DEM/100) * final_polls$sample_size)
 final_polls$votes_REP = round( (final_polls$pct_REP/100) * final_polls$sample_size)
@@ -65,7 +48,7 @@ final_polls$votes_REP = round( (final_polls$pct_REP/100) * final_polls$sample_si
 final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
 ```
 
-```{r}
+```{r set-up-for-jags}
 districts <- paste("District",c(1:13))
 
 y <- final_polls$y
@@ -77,24 +60,152 @@ N_districts <- districts %>% length
 N_days <- t %>% max
 ```
 
-```{r}
-voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
-voter_small = readRDS("ncvoter_Statewide_small.rds")
 
-# grab more columns from the DCC bc 2020 data does not appear to have party_cd
+## MAKING TURNOUT PART OF PRIOR
+
+```{r eval=F}
+# voter_hist_districts_resp = readRDS("filtered_ncvoterhis_resp.rds")
+voter_regis_2020 = readRDS("ncvoter_1027_small.rds")
+
+can_borrow <- voter_regis_2020 %>% 
+  group_by(county_desc, cong_dist_abbrv) %>% 
+  summarise(n=n()) %>% 
+  group_by(county_desc) %>%
+  summarise(n=n()) %>% 
+  filter(n==2) %>% 
+  select(county_desc)
+can_borrow <- can_borrow$county_desc
+can_borrow <- as.character(can_borrow)
+
+# Create a map from county to district
+# Match by county because it's much less likely 
+# for everyone in a county to only come from one district
+# while zip codes might result in false matches
+county2district <- voter_regis_2020 %>% 
+  filter(county_desc %in% can_borrow,
+         !is.na(cong_dist_abbrv)) %>% 
+  select(county_desc, cong_dist_abbrv) %>% 
+  unique()
+
+# test = voter_regis_2020 %>%
+#   filter(county_desc %in% c("CATAWBA", "FORSYTH", "HARNETT", "IREDELL", "LEE", "MOORE", "WAKE") &
+#   is.na(cong_dist_abbrv)) %>%
+#   group_by(county_desc) %>%
+#   summarise(n = n())
+
+# make decision based on where the majority of the county is
+county2district = county2district %>%
+  filter(!(county_desc %in% c("CATAWBA", "FORSYTH", "HARNETT", "IREDELL", "LEE", "MOORE", "WAKE"))) 
+row.names(county2district) <- county2district$county_desc
+
+county2district$county_desc <- as.character(county2district$county_desc)
+
+voter_regis_2020 <- voter_regis_2020 %>% 
+  mutate(county_desc = as.character(county_desc)) %>%
+  mutate(cong_dist_abbrv = case_when(
+    !is.na(cong_dist_abbrv) ~ as.integer(cong_dist_abbrv),
+    county_desc %in% can_borrow ~ as.integer(county2district[as.character(county_desc), 2]),
+    TRUE ~ as.integer(NA)
+  )) %>% 
+  mutate(cong_dist_abbrv = as.factor(cong_dist_abbrv))
 ```
 
-```{r fundamental-part-of-the-prior}
-# ALL OF THIS IS NOT EVEN ACCOUNTING FOR WHAT TO DO WITH OTHER
+# Filter missing districts
+
+```{r, eval = F}
+# note that there are still 573 ppl filtered out, but this makes up alomost 0% of the regis voters in 2020
+voter_regis_2020 <- voter_regis_2020 %>% 
+  filter(!is.na(cong_dist_abbrv))
+```
+
+```{r eval=F}
+voter_regis_2020 = voter_regis_2020 %>%
+  mutate(party_cd = as.character(party_cd)) %>%
+  mutate(party_cd = case_when(
+    party_cd == "DEM" ~ "DEM",
+    party_cd == "REP" ~ "REP",
+    TRUE ~ "Other"
+  )) %>%
+  mutate(race_code = case_when(
+    race_code == "W" ~ "White",
+    race_code == "B" ~ "Black",
+    TRUE ~ "Other"
+  )) 
+
+voter_regis_2020$gender_code = ifelse(voter_regis_2020$gender_code==" ", "U", as.character(voter_regis_2020$gender_code))
+voter_regis_2020$race_code = relevel(as.factor(voter_regis_2020$race_code), ref = "White")
+```
+
+```{r bind-income eval=F}
+median_inc_county = read.csv("median_household_incomes_NC.csv") %>%
+  mutate(county = str_replace(county, " County", "")) %>%
+  mutate(county = toupper(county))
+
+voter_regis_2020 = merge(voter_regis_2020, median_inc_county, by.x = "county_desc", by.y = "county", all.x = TRUE)
+```
+
+```{r eval=F}
+q25 = quantile(voter_regis_2020$med_household_income, 0.25)
+q50 = quantile(voter_regis_2020$med_household_income, 0.50)
+q75 = quantile(voter_regis_2020$med_household_income, 0.75)
+
+# first we need to bin age
+voter_regis_2020 = voter_regis_2020 %>%
+  mutate(age_binned = case_when(
+    birth_age <= 29 ~ "18-29",
+    birth_age >= 30 & birth_age <= 44 ~ "30-44",
+    birth_age >= 45 & birth_age <= 59 ~ "45-59",
+    birth_age >= 60 ~ "60+"
+  )) %>%
+  mutate(med_inc_binned = case_when(
+    med_household_income <= 46864 ~ '< 46864',
+    med_household_income > 46864 & med_household_income <= 52798 ~ '46864 - 52798',
+    med_household_income > 52798 & med_household_income <= 64509 ~ '52798 - 64509',
+    med_household_income > 64509 ~ '> 64509'
+  ))
+
+saveRDS(voter_regis_2020, "2020_regis_voters_binned.rds")
+
+```
+
+```{r eval=F}
+voter_regis_2020_grouped = voter_regis_2020 %>%
+  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
+  summarise(n = n())#, votes = sum(vote_or_not))
+
+voter_regis_2020_grouped %>%
+  arrange(., n)
+
+saveRDS(voter_regis_2020_grouped, "2020_regis_voters_grouped.rds")
+```
+
+
+```{r fundamental-part-of-the-prior eval=F}
+# FOR NOW LETS SPLIT THEM EVENLY
+
+voter_grouped = readRDS("grouped_voter_data.rds")
 
 # this is to get the prob of voting
 binary_model <-
-  brm(data = voter_grouped, family = binomial,
-      votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
-      iter = 2500, warmup = 500, cores = 2, chains = 2,
-      seed = 10)
-repub_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who are 1 for REP)
-democ_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who are 1 for DEM)
+   brm(data = voter_grouped, family = binomial,
+       votes | trials(n) ~ 1 + med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned,
+       iter = 2500, warmup = 500, cores = 2, chains = 2,
+       seed = 10)
+
+all_fitted_values = predict(binary_model, newdata = voter_regis_2020_grouped, type = "response")
+
+voter_regis_2020_grouped$pred_no_votes = all_fitted_values[,1]
+
+# voter_regis_2020_grouped = voter_regis_2020_grouped %>%
+#   mutate(check = ifelse(voter_regis_2020_grouped$n > voter_regis_2020_grouped$pred_no_votes, 1, 0))
+
+
+# voter_regis_2020_grouped = voter_regis_2020_grouped %>%rename(no_regis = n)
+
+# sub_voter_reg_2020_grouped = voter_regis_2020_grouped %>% select(party_cd, n, pred_vote_or_not, cong_dist_abbrv)
+
+# repub_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who are 1 for REP)
+# democ_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who are 1 for DEM)
   
 # FOR EACH DISTRICT
   
@@ -104,14 +215,66 @@ democ_fitted_probs = #predict(binary_model, newdata = 2020 registered voters who
 
 # put 1) over some denominator which is 1)+2)
 # put 2) over some denominator which is 1)+2)
+```
 
+```{r eval=F}
+voter_regis_2020_split_unaff = voter_regis_2020_grouped %>%
+  group_by(cong_dist_abbrv, party_cd) %>%
+  summarise(total_n = sum(n), total_y = sum(pred_no_votes))
+
+vote_share = matrix(rep(0,13*3), nrow = 13, byrow = TRUE)
+for (i in 1:13) {
+  dist_spec_df = voter_regis_2020_split_unaff %>% filter(cong_dist_abbrv == i)
+  #rows_district = which(voter_regis_2020_split_unaff$cong_dist_abbrv == i)
+  Dem_votes = dist_spec_df$total_y[dist_spec_df$party_cd == "DEM"]
+  Rep_votes = dist_spec_df$total_y[dist_spec_df$party_cd == "REP"]
+  Other_votes = dist_spec_df$total_y[dist_spec_df$party_cd == "Other"]
+
+  # Dem_votes = voter_regis_2020_split_unaff$total_y[voter_regis_2020_split_unaff$cong_dist_abbrv == i &
+  #                                                  voter_regis_2020_split_unaff$party_cd == "DEM"]
+  # Rep_votes = voter_regis_2020_split_unaff$total_y[voter_regis_2020_split_unaff$cong_dist_abbrv == i &
+  #                                                  voter_regis_2020_split_unaff$party_cd == "REP"]
+  # Other_votes = voter_regis_2020_split_unaff$total_y[voter_regis_2020_split_unaff$cong_dist_abbrv == i &
+  #                                                  voter_regis_2020_split_unaff$party_cd == "Other"]
+  Dem_votes = Dem_votes + Other_votes/2
+  Rep_votes = Rep_votes + Other_votes/2
+  #browser()
+  vote_share[i,] = c(i, Dem_votes, Rep_votes)
+  # new_row = data.frame(c(i, Dem_votes, Rep_votes))
+  # vote_share_df = rbind(vote_share_df, new_row)
+
+}
+
+vote_share_df = as.data.frame(vote_share)
+colnames(vote_share_df) = c("cong_dist", "Dem_vote", "Rep_vote")
+
+vote_share_df = vote_share_df %>%
+  mutate(Dem_vote_share = 100*Dem_vote/(Dem_vote+Rep_vote))
+
+save(vote_share_df, file="vote_share_df.Rdata")
+
+# voter_regis_2020_dist1 = voter_regis_2020_grouped %>%
+#   filter(cong_dist_abbrv==1) %>%
+#   group_by(party_cd) %>%
+#   summarise(total_n = sum(no_regis), total_y = sum(pred_no_votes))
+# 
+# voter_regis_2020_dist1
+# voter_regis_2020_grouped[which(voter_regis_2020_grouped$n>voter_regis_2020_grouped$pred_no_votes)]
+```
+
+```{r}
 # IF WE CAN FIGURE OUT THE "OTHER" PARTY, and our assumption that the party they register for is the party they vote for is strong (WHICH IT IS STRONG), then for each district, then #(REP)/#(PPL in District) = Republican vote share for that district 
 
 # then we will have vote share for each district aka fundamental
 # and then we can 0.5*fundamental + 0.5*partisan lean = priors (12x1)
 ```
 
+# Finish prior and run model
+
 ```{r}
+# From demographics and turnout
+load("vote_share_df.Rdata")
+
 # from 538 article on redistricting
 # https://fivethirtyeight.com/features/north-carolinas-new-house-map-hands-democrats-two-seats-but-it-still-leans-republican/
 partisan_leans = as.matrix(c(10, 19, -24, 29, -36, 18, -20, -10, -13, -38, -17, 34, -36))
@@ -120,13 +283,27 @@ lean_to_prior = function(lean) {
   return(50 + (1/2)*lean)
 }
 
-priors = apply(partisan_leans, 1, lean_to_prior)
+rep_incumbents = c(3, 5, 7, 8, 9, 10, 13)
+dem_incumbents = c(1, 4, 12)
+
+priors_from_leans = apply(partisan_leans, 1, lean_to_prior)
+
+for (i in 1:13) {
+  if (i %in% dem_incumbents) {
+    priors_from_leans[i] = priors_from_leans[i] + 2.7
+  }
+  if (i %in% rep_incumbents) {
+    priors_from_leans[i] = priors_from_leans[i] - 2.7
+  }
+}
+
+priors = 0.1*vote_share_df$Dem_vote_share+0.9*priors_from_leans
+
+#partisan_lean_only_priors = apply(partisan_leans, 1, lean_to_prior)
 
 jags_data <- list(y=y,t=t,r=r,
                   N_polls=N_polls,N_states=N_districts,N_days=N_days, priors=priors)
 ```
-
-
 
 
 ```{r model,eval = TRUE}
@@ -143,19 +320,6 @@ model <- function(){
     }
   }
 
-
-  # for(j in 2:N_days){
-  #   for(i in 1:N_states){
-  #     for (q in 1:100){
-  #     #HOW TO GET POSTERIOR PRED DISTRIBUTION?
-  #       betaq[i,j,q] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
-  #       compare1[i,j,q] <- ifelse(betaq[i,j,q] > 50, 1, 0)
-  #     }
-  #    beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
-  #    BidenWins[i,j] <- sum(compare1[i,j,])/100
-  #   }
-  # }
-  
   #EXERCISE: add hierarchical prior for sigma2_beta and sigma2_y, i.e. sigma2_beta[j] all come from a common distribution 
   for (j in 1:N_states){
       #mu0[j] ~ dnorm(priors[j],pow(7.5,-2))
@@ -192,16 +356,6 @@ jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("be
 
 ```
 
-```{r eval=FALSE}
-jags_sims$BUGSoutput
-
-BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
-
-hist(BidenWins)
-
-print(c(quantile(BidenWins, 0.2), quantile(BidenWins, 0.8)))
-```
-
 
 ```{r}
 elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
@@ -235,5 +389,23 @@ for (i in 1:length(districts)) {
   print(rep_intervals[1,i])
   cat("\n")
 }
+```
+
+# Traceplots
+
+```{r}
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+parameters = c(betas_day_of_election)
+
+tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+
+tps <- function(var){
+  ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
+    geom_line() +
+    labs(x ="Iterations", y = as.name(var))
+}
+
+all_beta_trace = lapply(names(tp_vars), tps)
+do.call(grid.arrange, all_beta_trace)
 ```
 
