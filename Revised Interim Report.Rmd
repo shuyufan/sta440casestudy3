@@ -156,7 +156,7 @@ voter_cong %>%
 voter_cong$voterpercent <- voter_cong$votes / voter_cong$n
 ```
 
-```{r EDA cong, echo=F, fig.height = 4, fig.width = 8}
+```{r EDA cong-not-include, include=F, fig.height = 4, fig.width = 8}
 ggplot(voter_cong, aes(x = cong_dist_abbrv, y = voterpercent)) + geom_boxplot(aes(fill = party_cd)) + labs(y="Turnout Percentage", x = "Congressional District", title = "Voter Turnout for Different Congressional Districts", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
 ```
 
@@ -169,7 +169,7 @@ binned_age_party <- ggplot(voter_grouped, aes(x = party_cd, y = voterpercent)) +
 grid.arrange(grobs = list(binned_race_party, binned_gender_party, binned_age_gender, binned_age_party), ncol = 2)
 ```
 
-After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. In the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
+After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. From plot of congressional district vs. turnout percentage (see Appendix), we can see that for different districts, turnout percentage varies somewhat among the different parties. For instance, districts 1, 2, and 4 have higher turnout among Republicans (as opposed to amog Democrats or third/other parties). Districts 5 and 13 appear to have higher turnout among Democrats relative to the other parties. Also, in the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
 
 # Method
 
@@ -563,6 +563,10 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 26. Akee, R. (2019). Voting and Income. Retrieved October 22, 2020, from https://econofact.org/voting-and-income
 
 ## Additional EDA
+
+```{r EDA cong, echo=F, fig.height = 4, fig.width = 8}
+ggplot(voter_cong, aes(x = cong_dist_abbrv, y = voterpercent)) + geom_boxplot(aes(fill = party_cd)) + labs(y="Turnout Percentage", x = "Congressional District", title = "Voter Turnout for Different Congressional Districts", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
+```
 
 ```{r, echo = F, fig.width = 8, fid.height = 4}
 binned_income <- ggplot(voter_grouped, aes(x = med_inc_binned, y = voterpercent)) + geom_boxplot() + labs(aes(fill = party_cd), y="Turnout Percentage", x = "County Median Household Income", title = "Voter Turnout for Different \n Median Household Income and Party Affliation") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
