@@ -87,6 +87,8 @@ final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
 # Customize polls used
 
 final_polls = final_polls %>% filter(days_to_election <= 30, internal=="false", partisan=="", population=="lv")#, (grepl("A", fte_grade) | grepl("B", fte_grade)))
+
+saveRDS(final_polls,"cleaned_senate_polls.rds")
 ```
 
 ```{r}
