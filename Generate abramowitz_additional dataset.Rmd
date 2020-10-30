@@ -1,0 +1,63 @@
+---
+title: "Additional Macroeconomic Indicators"
+author: "Alice Liao"
+date: "10/29/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+# abramwitz_data from Andrew Gelman potus model
+abramowitz <- read.csv('abramowitz_data.csv')
+# S&P monthly price from https://www.multpl.com/s-p-500-historical-prices/table/by-month
+stock_data <- read.csv("S&P_monthly.csv")
+# Real income percentage change from quarter one year ago from FRED
+# https://fred.stlouisfed.org/series/A067RO1Q156NBEA
+real_income_data <- read.csv("real_income.csv")
+```
+
+```{r}
+presidential_year <- as.character(abramowitz$year)
+stock_data_filtered <- stock_data %>%
+  separate(Date,into = c("date_month", "year"), sep = ", ") %>%
+  separate(date_month, into = c("month","day"), sep = " ") %>%
+  mutate(Price = as.numeric(Price)) %>%
+  filter(month %in% c("Sep","Nov")) %>%
+  filter(year %in% presidential_year)
+
+# calculate stock growth 3 months (Sep 1 - Nov 1) prior to the presidential election 
+stock_growth = NULL
+for(i in 1:length(presidential_year)) {
+  yr = presidential_year[i]
+  df = stock_data_filtered %>%
+    filter(year == yr)
+  growth = df[1,4]/df[2,4]-1
+  stock_growth[i] = growth
+}
+  
+```
+
+```{r}
+q2_real_income <- real_income_data %>%
+  separate(DATE, into = c("day", "month", "year"), sep = "/") %>%
+  filter(year %in% presidential_year & month == "07")
+
+q3_real_income <- real_income_data %>%
+  separate(DATE, into = c("day", "month", "year"), sep = "/") %>%
+  filter(year %in% presidential_year & month == "10")
+  
+```
+
+```{r}
+abramowitz_additional <- abramowitz %>%
+  mutate(three_month_stock_growth = stock_growth,
+         q2_real_income_growth = q2_real_income$real_income_perc_change,
+         q3_real_income_growth = q3_real_income$real_income_perc_change)
+
+write.csv(abramowitz_additional, "abramowitz_additional.csv")
+```
+
