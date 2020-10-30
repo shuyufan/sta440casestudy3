@@ -46,7 +46,10 @@ final_polls$votes_DEM = round( (final_polls$pct_DEM/100) * final_polls$sample_si
 final_polls$votes_REP = round( (final_polls$pct_REP/100) * final_polls$sample_size)
 
 final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
+
+saveRDS(final_polls, "cleaned_nc_polls.rds")
 ```
+
 
 ```{r set-up-for-jags}
 districts <- paste("District",c(1:13))

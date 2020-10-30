@@ -63,7 +63,7 @@ final_polls$Abbrev = replace_na(final_polls$Abbrev, "US")
 final_polls$state = final_polls$Abbrev
 
 econ_pres_polls = final_polls
-
+saveRDS(econ_pres_polls, "cleaned_pres_polls.rds")
 ```
 
 ```{r }
@@ -85,6 +85,7 @@ econ_pres_polls$state = as.character(econ_pres_polls$state)
 econ_pres_polls = econ_pres_polls %>%
   mutate(state = ifelse(state == "--","US",state),
          y = biden/(biden + trump)*100)
+
 ```
 
 ```{r}
@@ -94,7 +95,7 @@ econ_pres_polls = econ_pres_polls %>%
 states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
 
 econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
-
+saveRDS(econ_pres_polls, "cleaned_econ_polls.rds")
 ```
 
 ```{r}
