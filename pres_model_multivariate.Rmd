@@ -159,6 +159,27 @@ national_mu_prior <- 100 - predict(prior_model,newdata = tibble(juneapp = -10, t
 ```
 
 
+## MODEL SPECIFICATION
+
+The response we will use is $Y_k$, Biden's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
+
+$Y_k \sim N(\theta_{jt},\sigma^2_{yj})$ 
+\[\theta_{\cdot t} \sim MVN(\theta_{\cdot t-1},\Sigma)\]
+$\Sigma \sim Wishart(S, J+1)$ where $S$ is the state covariance matrix and $J$ is the number of states in the model.
+$\sigma^2_{yj} \sim \Inv-Gamma(\nu_u, \nu_y*\tau_y)$
+$ \nu_y \sim Uniform(0,100)$ and $\tau_y \sim Uniform(0,100)$.
+
+<!-- We will let other states influence each other by placing a hierarchical prior on the model parameters: $\{\sigma^2_{yj},\sigma^2_{\beta j},\beta_{j1}\}$. $\sigma^2_{yj} \sim P_{\sigma_y}$; $\sigma^2_{\beta j} \sim P_{\sigma_\beta}$; $\beta_{j1} \sim P_\beta$. -->
+
+<!-- Each state has its own observation variance, $\sigma^2_{yj}$ and two-party preferences. Thus, $Y_k \sim N(\beta_{jt},\sigma^2_{yh})$. We use a random walk for $\beta$, $\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$. We will let other states influence each other by placing a hierarchical prior on the model parameters: $\{\sigma^2_{yj},\sigma^2_{\beta j},\beta_{j1}\}$. $\sigma^2_{yj} \sim P_{\sigma_y}$; $\sigma^2_{\beta j} \sim P_{\sigma_\beta}$; $\beta_{j1} \sim P_\beta$. In the code below, everything is set up EXCEPT these hierarchical structures. You can choose whatever distributions $P$ you like.  -->
+
+<!-- Now, instead of having all states equally correlated with each other via the hierarchy, we will estimate the correlation structure. Now $Y_k \sim N(\theta_{jt},\sigma^2_{yj})$. The evolution is as follows:  -->
+
+<!-- \[\theta_{\cdot t} \sim MVN(\theta_{\cdot t-1},\Sigma)\] -->
+
+<!-- Using same priors on $\theta_{\cdot 1}$, the day of the election, as before, rewrite the jags code to implement the above model.  -->
+
+
 ```{r final-prior-calculation}
 # because partisan lean is in terms of democ
 priors = 0.1*national_mu_prior + 0.9*lean_to_prior(leans_states)
@@ -199,9 +220,6 @@ model_mv <- function(){
   }
   nu_y ~ dunif(0,100)
   tau_y ~ dunif(0,100)
-  
-  nu_beta ~ dunif(0,100)
-  tau_beta ~ dunif(0,100)
   
   sigma2_0 = 1/sigma2_0_inv
   sigma2_0_inv ~ dgamma(.5,.5)

@@ -104,7 +104,7 @@ plot_usmap(data = econ_state_df, values = "n", color = "red") +
   scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
   theme(legend.position = "right")
 #democrat percentage in polling data
-ggplot(econ_state_df, aes(days_to_election, y)) + geom_bin2d()
+ggplot(econ_eda_df, aes(days_to_election, y)) + geom_bin2d()
 #democrat percentage by states
 plot_usmap(data = econ_state_df, values = "avg", color = "black") + 
   scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
@@ -123,12 +123,69 @@ plot_usmap(data = senate_state_df, values = "avg", color = "black") +
   scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
   theme(legend.position = "right")
 ```
+
 ```{r house EDA}
 #biden percentage in polling data
 ggplot(house_eda_df, aes(x=days_to_election, y=y,color=as.factor(seat_number))) + geom_point()
 ```
 
-## Method
+## Methods
+
+### Presidential Election Model
+
+The response we will use is $Y_k$, Biden's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
+
+$Y_k \sim N(\theta_{jt},\sigma^2_{yj})$ \newline
+$\theta_{\cdots t} \sim MVN(\theta_{\cdots t-1},\Sigma)$ \newline
+$\Sigma \sim Wishart(S, J+1)$ where $S$ is the state covariance matrix and $J$ is the number of states in the model. \newline
+$\sigma^2_{yj} \sim InvGamma(\nu_u, \nu_y\tau_y)$ \newline
+$\nu_y \sim Uniform(0,100)$ and $\tau_y \sim Uniform(0,100)$. \newline
+$\theta_{j1} \sim N(\mu_{j}, \sigma^2)$  \newline
+$\sigma^2 \sim InvGamma(0.5, 0.5)$ \newline
+$\mu_{j} \sim N(h_j,7.5^2)$  \newline
+$h_j = 0.1\hat{\text{Presidental Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
+$\text{Presidental Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i  + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
+$\epsilon_i \sim N(0, \phi^2)$  \newline
+
+*where explain variables later the S&P stock growth three months prior to the election and also explain i where i is each year in that Abramowitz data*.
+
+*explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
+
+
+### Senate Election Model
+
+The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
+
+$Y_k \sim N(\beta_{jt},\sigma^2_{yj})$ \newline
+$\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$ \newline
+$\sigma^2_{yj} \sim InvGamma(\nu_u, \nu_y\tau_y)$ \newline
+$\nu_y \sim Uniform(0,100)$ and $\tau_y \sim Uniform(0,100)$. \newline
+$\sigma^2_{\beta j} \sim InvGamma(\nu_{\beta}, \nu_{\beta}\tau_{\beta}))$ \newline
+$\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newline
+$\beta_{j1} \sim N(\mu_{j}, \sigma^2)$  \newline
+$\sigma^2 \sim InvGamma(0.5,0.5)$ \newline
+$\mu_{j} \sim N(h_j,7.5^2)$  \newline
+$h_j = \text{Vote Share from Partisan Lean}_j + \text{Incumbency Advantage}_j$  \newline
+
+We took the predicted Democratic vote share for North Carolina to predict the outcome of the NC Senate election. *we incorporate voter turnout in the prior, see appendix A.2 - Cathy*
+
+### House Election Model
+
+The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on district $j$ (where $j$ is in districts $1, \cdots, 11, 13$ of North Carolina). For district 12, the vote share is coded as 100 because there is only one candidate, and she is a Democrat.
+
+$Y_k \sim N(\beta_{jt},\sigma^2_{yj})$ \newline
+$\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$ \newline
+$\sigma^2_{yj} \sim InvGamma(\nu_u, \nu_y\tau_y)$ \newline
+$\nu_y \sim Uniform(0,100)$ and $\tau_y \sim Uniform(0,100)$. \newline
+$\sigma^2_{\beta j} \sim InvGamma(\nu_{\beta}, \nu_{\beta}\tau_{\beta}))$ \newline
+$\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newline
+$\beta_{j1} \sim N(h_j, 7.5)$  \newline
+$h_j = 0.9*\text{Vote Share from Partisan Lean}_j + 0.1*\text{Expected Vote Share from Voter Turnout}_j$  \newline
+
+$\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. 
+
+*explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
+
 
 ## Results
 
@@ -136,7 +193,21 @@ ggplot(house_eda_df, aes(x=days_to_election, y=y,color=as.factor(seat_number))) 
 
 ## Diagnostics
 
-# Appendix
+# Appendix A
+
+## A.1 Presidential Election Model
+
+## A.2 Senate Election Model
+
+## A.3 House Election Model
+
+*insert interim report model here*
+
+We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district.
+
+# Appendix B
+
+# Appendix C (plots and other miscellaneous output)
 
 ## References
 1. Linzer, D. A. (2013). Dynamic Bayesian Forecasting of Presidential Elections in the States. Journal of the American Statistical Association, 108(501), 124-134. doi:10.1080/01621459.2012.737735
