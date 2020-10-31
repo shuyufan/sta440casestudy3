@@ -364,14 +364,12 @@ ggplot(trump_pwin_time, aes(x = days_bf_election-1, y = exp_pwin, color = state)
 
 *insert Figure label* shows how Trump's probability of winning the election changes over the 60 days before the election in each state of interest.
 
-## Bonus stuff: Dem EC Vote Histogram and Win Prob.
+# Raw Output for Appendix
 
 ```{r}
-hist(ec_votes_dem)
+options(max.print = 999999999)
+jags_sims_mv$BUGSoutput$summary
 
-#pmean = ec_votes>=270
-mean(ec_votes_dem>=270) 
-#print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
 ```
 
 # Traceplots
@@ -390,5 +388,15 @@ tps <- function(var){
 
 all_beta_trace = lapply(names(tp_vars), tps)
 do.call(grid.arrange, all_beta_trace)
+```
+
+## Bonus stuff: Dem EC Vote Histogram and Win Prob.
+
+```{r}
+hist(ec_votes_dem)
+
+#pmean = ec_votes>=270
+mean(ec_votes_dem>=270) 
+#print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
 ```
 
