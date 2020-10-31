@@ -182,26 +182,27 @@ We decided to use a fixed-effect logistic regression model. Since we are analyzi
 $$
 \begin{aligned}
 Vote_i \sim Binomial(n_i, \pi_i) \\
-logit(\pi_i) = \alpha_0 + \Sigma_{s \in S}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{g \in G}\beta_g*I(Gender_i = Gender \ Category_g) +\\
-\Sigma_{r \in R}\beta_r*I(Race_i = Race \ Category_r) + \Sigma_{a \in A}\beta_a*I(Age_i = Age \ Category_a) +\\
-\Sigma_{p \in P}\beta_p*I(Party_i = Party \ Category_p) + \\
-\Sigma_{g \in G, p \in P}\beta_{gp}*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
-\Sigma_{r \in R, p \in P}\beta_{rp}*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
-\Sigma_{g \in G, a \in A}\beta_{ga}*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
-\Sigma_{p \in P, a \in A}\beta_{pa}*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
+logit(\pi_i) = \alpha_0 + \Sigma_{j = 1,2,3}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{j = 5,6}\beta_j*I(Gender_i = Gender \ Category_g) +\\
+\Sigma_{j = 7,8}\beta_j*I(Race_i = Race \ Category_r) + \Sigma_{j = 9,10,11}\beta_j*I(Age_i = Age \ Category_a) +\\
+\Sigma_{j = 12,13}\beta_j*I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 14,...,17}\beta_j*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 18,...,21}\beta_j*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 22,...,27}\beta_j*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
+\Sigma_{j = 28,...,33}\beta_j*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
 \end{aligned}
 $$
 
 where:
 $$
 \begin{aligned}
-S = \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\}\\
-G = \{Male, Unspecified\} \\
-R = \{Black, Other\} \\
-A = \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
-P = \{Republican, \ Other\}
+Income \ Category_s \in \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\} \\
+Gender \ Category_g \in \{Male, Unspecified\} \\
+Race \ Category_r \in \{Black, Other\} \\
+Age \ Category_a \in \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
+Party \ Category_p \in \{Republican, \ Other\}
 \end{aligned}
 $$
+
 
 Where $\pi_i$ is the probability that subgroup $i$ votes. $Vote_i$ is the number of people in the $i$th subgroup that voted in the 2016 election. The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
