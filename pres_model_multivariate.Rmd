@@ -326,15 +326,50 @@ p_trump_win = 1 - mean(ec_votes_dem >= 270)
 p_trump_win
 ```
 
+```{r}
+pres_res = matrix(c(round(p_trump_win,2), 
+                    round(1-p_trump_win,2),
+                    as.character(round(538-mean(ec_votes_dem))),
+                    as.character(round(mean(ec_votes_dem)))), 
+                    nrow = 2, byrow = TRUE)
+colnames(pres_res) = c("Trump", "Biden")
+rownames(pres_res) = c("Probability of Wining", "Electoral Votes")
+kable(pres_res, caption = "Predicted Probability of Wining and Electoral Vote Count")
+```
 
-## Bonus stuff: Dem EC Vote Histogram and Win Prob.
+The probability that Trump wins re-election is `r round(p_trump_win,2)`. The predicted electoral colleges votes for Trump is `r round(538-mean(ec_votes_dem),0)`.
 
 ```{r}
-hist(ec_votes_dem)
+trump_pwin_time = NULL
+for (j in 1:N_states) {
+  new_col = NULL
+for (t in 1:N_days) {
+  new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
+}
+  trump_pwin_time = cbind(trump_pwin_time, new_col)
+}
+colnames(trump_pwin_time) <- states
 
-#pmean = ec_votes>=270
-mean(ec_votes_dem>=270) 
-#print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
+library(directlabels)
+trump_pwin_time  = as.data.frame(trump_pwin_time)%>%
+  gather(., "state", "exp_pwin") %>%
+  mutate(days_bf_election = rep(seq(1, N_days), N_states))
+
+ggplot(trump_pwin_time, aes(x = days_bf_election-1, y = exp_pwin, color = state)) +
+  geom_line() + geom_hline(yintercept = 0.5) + scale_x_reverse() + 
+  labs(x = "Days Before Election", y = "Trump's Probability of Winning")  +
+  geom_dl(aes(label=state), method=list("last.points", cex = 0.6)) +
+  theme(legend.position = "none")
+```
+
+*insert Figure label* shows how Trump's probability of winning the election changes over the 60 days before the election in each state of interest.
+
+# Raw Output for Appendix
+
+```{r}
+options(max.print = 999999999)
+jags_sims_mv$BUGSoutput$summary
+
 ```
 
 # Traceplots
@@ -353,5 +388,15 @@ tps <- function(var){
 
 all_beta_trace = lapply(names(tp_vars), tps)
 do.call(grid.arrange, all_beta_trace)
+```
+
+## Bonus stuff: Dem EC Vote Histogram and Win Prob.
+
+```{r}
+hist(ec_votes_dem)
+
+#pmean = ec_votes>=270
+mean(ec_votes_dem>=270) 
+#print(c(quantile(pmean, 0.025), quantile(pmean, 0.975)))
 ```
 
