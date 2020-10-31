@@ -76,11 +76,30 @@ library(usmap)
 
 ## Data Description
 
-Senate poll/House poll: from https://data.fivethirtyeight.com/
-States_cov_matrix: from the Economist paper
-Economist prediction polls: from the Economist paper (pres)
-partisan lean (prior for pres): from 538
-Abramowitz data: from the Economist paper (pres)
+In literature, election prediction relies on polling data as well as "the fundamentals", which are economic and demographic data (The Economist, 2020) *cite in Reference*. To forecast the outcomes of presidential election, senate election and house election (for North Carolina only), we obtained 2020 presidential polling data from *The Economist*, 2020 senate and house polling data as well as partisan lean data from *FiveThirtyEight*. 
+
+The fundamentals data were retrieved from various online sources, such as Adrew Gelman's presidential election prediction model opensource (for correlation across states and historical incumbent party's June approval rating), Federal Reserve Economic Data (for second quarter real income growth), and NC Board of Elections website (for 2020 NC registered voter demographics). Please refer to Appendix B for a detailed description of all data sets used. 
+
+*Appendix B stuff*
+
+### Presidential Election Model: 
+- `2020 US presidential election polls - all_polls.csv`: 2020 U.S. Presidential Election Polls compiled by *The Economist*, publiclly available at https://projects.economist.com/us-2020-forecast/president/how-this-works. 
+- `partisan_leans_538.csv`: effect of partisan lean on the Democratic candidate's presidential election vote share in each state. Available at https://github.com/fivethirtyeight/data/tree/master/partisan-lean.
+- `abramowitz_data.csv`: downloaded from Andrew Gelman's Github repository on 2020 Presidential Election. This data set contains information on each 1948-2016 election year's 2nd quarter GDP performance, incumbent party's June approval rating and incumbent party's vote share. Available at https://github.com/TheEconomist/us-potus-model.
+- `states_cov_matrix_full.csv`: covariance matrix of states which take into account similarity between states based on their demographic and political profiles. Retrieved from Andrew Gelman's Github repository on 2020 Presidential Election. 
+- `abramowitz_additional.csv`: Supplemented `abramowitz_data.csv` with the corresponding year's 2nd quarter real income growth, 3rd quarter real income growth (data from *FRED* https://fred.stlouisfed.org/series/A067RO1Q156NBEA) and S&P stock performance 3 months prior to the election (data from https://www.multpl.com/s-p-500-historical-prices/table/by-month). 
+
+### Senate Election Model: 
+- `senate_polls.csv`: *this is from course website* https://data.fivethirtyeight.com/ ?
+- `partisan_leans_538.csv`: same as the data set in presidential election model
+- We also incroporated incumbency advantage in the model, which as *FiveThirtyEight* suggests, is on average 2.6 for senate incumbents (https://fivethirtyeight.com/features/how-much-was-incumbency-worth-in-2018/).
+
+### House Election Model (for North Carolina):
+- `house_polls.csv`: *this is from course website* https://data.fivethirtyeight.com/ ?
+- `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
+
+
+Senate poll/House poll: from 
 
 
 ## Exploratory Data Analysis
