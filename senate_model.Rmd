@@ -260,11 +260,6 @@ prob_rep_control
 
 ```
 
-```{r eval=F}
-hist(dem_seats)
-```
-
-
 ## Point, Interval Estimates for Tillis (Rep) in NC Senate
 
 ```{r}
@@ -279,6 +274,39 @@ tillis_ci = c(100 - as.numeric(cunningham_ci[2]), 100-as.numeric(cunningham_ci[1
 
 tillis_vote_share
 tillis_ci
+
+nc_senate_race = matrix(round(c(tillis_vote_share, tillis_ci,
+                                cunningham_vote_share, cunningham_ci),2), 
+                        nrow = 2, byrow = TRUE)
+colnames(nc_senate_race) = c("Estimate", "2.5% Quantile", "97.5% Quantile")
+rownames(nc_senate_race) = c("Tillis", "Cunningham")
+kable(nc_senate_race, caption = "Predicted Vote Share for Tillis-Cunningham Race")
+```
+
+The probability that Republicans retain control of the Senate is `r round(prob_rep_control,2)`. For the NC Senate race (Tillis vs. Cunningham), the predicted vote share for Cunningham is `r round(cunningham_vote_share,2)`% with a 95% confidence interval of (`r round(cunningham_ci[1],2)`, `r round(cunningham_ci[2],2)`).
+
+```{r eval=F}
+dem_seats_df = data.frame(dem_seats)  
+colnames(dem_seats_df) = "number_dem_seats"
+dem_seats_df = dem_seats_df %>%
+  mutate(blue = as.factor(ifelse(number_dem_seats > 50, 1, 0)))
+
+minimum = min(dem_seats_df$number_dem_seats)-1
+maximum = max(dem_seats_df$number_dem_seats)+1
+
+ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) + 
+  geom_histogram(binwidth = 0.5) +
+  scale_x_discrete(limits=minimum:maximum) +
+  scale_fill_manual(values=c("#FF0000","#0015BC")) + 
+  theme(legend.position = "none") +
+  labs(x = "Number of Democrat Seats", y = "Count")
+```
+
+# Raw Output for Appendix
+
+```{r}
+options(max.print = 999999999)
+jags_sims$BUGSoutput$summary
 
 ```
 
