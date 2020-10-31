@@ -99,9 +99,6 @@ The fundamentals data were retrieved from various online sources, such as Adrew 
 - `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
 
 
-Senate poll/House poll: from 
-
-
 ## Exploratory Data Analysis
 
 ```{r load data}
@@ -152,21 +149,24 @@ ggplot(house_eda_df, aes(x=days_to_election, y=y,color=as.factor(seat_number))) 
 
 ### Presidential Election Model
 
-The response we will use is $Y_k$, Biden's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
+The response we will use is $Y_k$, Biden's share of the two-party vote using the following model where the poll $k$ (of $K$=*3361* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
 
 $Y_k \sim N(\theta_{jt},\sigma^2_{yj})$ \newline
+Priors for $\theta_{jt}$: 
 $\theta_{\cdots t} \sim MVN(\theta_{\cdots t-1},\Sigma)$ \newline
-$\Sigma \sim Wishart(S, J+1)$ where $S$ is the state covariance matrix and $J$ is the number of states in the model. \newline
+$\Sigma \sim Wishart(S, J+1)$ where $S$ is the state covariance matrix (obtained from Andrew Gelman's model) and $J$ is the number of states in the model. \newline
 $\sigma^2_{yj} \sim InvGamma(\nu_u, \nu_y\tau_y)$ \newline
 $\nu_y \sim Uniform(0,100)$ and $\tau_y \sim Uniform(0,100)$. \newline
 $\theta_{j1} \sim N(\mu_{j}, \sigma^2)$  \newline
 $\sigma^2 \sim InvGamma(0.5, 0.5)$ \newline
 $\mu_{j} \sim N(h_j,7.5^2)$  \newline
-$h_j = 0.1\hat{\text{Presidental Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
+$h_j = 0.1*\hat{\text{Presidental Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
 $\text{Presidental Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i  + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
 $\epsilon_i \sim N(0, \phi^2)$  \newline
 
-*where explain variables later the S&P stock growth three months prior to the election and also explain i where i is each year in that Abramowitz data*.
+*where explain variables later the S&P stock growth three months prior to the election*
+*also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
+In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval rating of the incumbent party. When computing the 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). 
 
 *explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
 
@@ -283,4 +283,6 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 25. Igielnik, R. (2020). Men and Women in the U.S. Continue to Differ in Voter Turnout Rate. Retrieved October 22, 2020, from https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/
 \newline
 26. Akee, R. (2019). Voting and Income. Retrieved October 22, 2020, from https://econofact.org/voting-and-income
+
+
 
