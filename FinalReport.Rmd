@@ -1,18 +1,7 @@
 ---
-title: "FinalReport"
-author: "Lynn Fan"
-date: "10/28/2020"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
----
-title: "Interim Report: Who Votes in NC?"
+title: "Final Report: Election Prediction"
 author: "Alexander Bendeck, Lynn Fan, Cathy Lee, Alice Liao, Justina Zou"
-date: "24 October 2020"
+date: "28 October 2020"
 fontsize: 11pt
 geometry: "left=1.5cm,right=1.5cm,top=1.5cm,bottom=1.5cm"
 output: 
@@ -79,6 +68,7 @@ library(stringi)
 library(ggplotify)
 library(brms)
 library(tidybayes) # easy residuals
+library(usmap)
 #library(xtable)
 ```
 
@@ -94,6 +84,49 @@ Abramowitz data: from the Economist paper (pres)
 
 
 ## Exploratory Data Analysis
+
+```{r load data}
+pres_eda_df = readRDS("cleaned_pres_polls.rds")
+econ_eda_df = readRDS("cleaned_econ_polls.rds")
+econ_state_df = econ_eda_df %>%
+  group_by(state) %>%
+  summarise(n=n(),avg=mean(y))
+house_eda_df = readRDS("cleaned_house_polls.rds")
+senate_eda_df = readRDS("cleaned_senate_polls.rds")
+senate_state_df = senate_eda_df %>%
+  group_by(state) %>%
+  summarise(n=n(),avg=mean(y))
+```
+
+```{r president EDA}
+#number of polls for each state in the economist paper data set
+plot_usmap(data = econ_state_df, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
+  theme(legend.position = "right")
+#democrat percentage in polling data
+ggplot(econ_state_df, aes(days_to_election, y)) + geom_bin2d()
+#democrat percentage by states
+plot_usmap(data = econ_state_df, values = "avg", color = "black") + 
+  scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+
+```{r senate EDA}
+#number of polls for senate
+plot_usmap(data = senate_state_df, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
+  theme(legend.position = "right")
+#biden percentage in polling data
+ggplot(senate_eda_df, aes(days_to_election, y)) + geom_bin2d()
+#democrat percentage by states
+plot_usmap(data = senate_state_df, values = "avg", color = "black") + 
+  scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+```{r house EDA}
+#biden percentage in polling data
+ggplot(house_eda_df, aes(x=days_to_election, y=y,color=as.factor(seat_number))) + geom_point()
+```
 
 ## Method
 

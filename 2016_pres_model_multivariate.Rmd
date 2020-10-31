@@ -18,55 +18,57 @@ library(gridExtra)
 
 ## Data
 
-```{r eval=F}
+```{r }
 
-pres_polls = read.csv("president_polls.csv")
+#pres_polls = read.csv("president_polls.csv")
 
+pres_polls = read.csv("president_general_polls_2016.csv")
 
-dem_results = pres_polls[pres_polls$candidate_party == "DEM",]
-dem_cols = colnames(dem_results)
-cols_to_paste = (length(dem_cols)-3):length(dem_cols)
-dem_cols[cols_to_paste] = paste(dem_cols[cols_to_paste], "DEM", sep="_")
-colnames(dem_results) = dem_cols
+# dem_results = pres_polls[pres_polls$candidate_party == "DEM",]
+# dem_cols = colnames(dem_results)
+# cols_to_paste = (length(dem_cols)-3):length(dem_cols)
+# dem_cols[cols_to_paste] = paste(dem_cols[cols_to_paste], "DEM", sep="_")
+# colnames(dem_results) = dem_cols
+# 
+# rep_results = pres_polls[pres_polls$candidate_party == "REP",]
+# rep_cols = colnames(rep_results)
+# rep_cols[cols_to_paste] = paste(rep_cols[cols_to_paste], "REP", sep="_")
+# colnames(rep_results) = rep_cols
+# 
+# rep_small = rep_results %>% select(question_id, candidate_id_REP, candidate_name_REP, pct_REP)
+# 
+# final_polls = left_join(dem_results, rep_small, by="question_id")
 
-rep_results = pres_polls[pres_polls$candidate_party == "REP",]
-rep_cols = colnames(rep_results)
-rep_cols[cols_to_paste] = paste(rep_cols[cols_to_paste], "REP", sep="_")
-colnames(rep_results) = rep_cols
+final_polls = pres_polls[!duplicated(pres_polls$poll_id),]
 
-rep_small = rep_results %>% select(question_id, candidate_id_REP, candidate_name_REP, pct_REP)
+final_polls$days_to_election = as.numeric(as.Date("11/8/2016", "%m/%d/%y")-as.Date(final_polls$enddate, "%m/%d/%y"))
 
-final_polls = left_join(dem_results, rep_small, by="question_id")
+final_polls = final_polls %>% filter(days_to_election > 0)
 
-final_polls = final_polls[!duplicated(final_polls$poll_id),]
+#final_polls$state = as.character(final_polls$state)
 
-
-final_polls$days_to_election = as.numeric(as.Date("11/3/2020", "%m/%d/%y")-as.Date(final_polls$end_date, "%m/%d/%y"))
-
-final_polls$state = as.character(final_polls$state)
-
-final_polls$votes_DEM = round( (final_polls$pct_DEM/100) * final_polls$sample_size)
-final_polls$votes_REP = round( (final_polls$pct_REP/100) * final_polls$sample_size)
+final_polls$votes_DEM = round( (final_polls$rawpoll_clinton/100) * final_polls$samplesize)
+final_polls$votes_REP = round( (final_polls$rawpoll_trump/100) * final_polls$samplesize)
 
 final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
 
 
-final_polls = final_polls %>%
-  mutate(state = ifelse(state == "","US",state))
+#final_polls = final_polls %>%
+#  mutate(state = ifelse(state == "","US",state))
 
 states_raw = read.csv("electoral_votes.csv")
 states_raw$state = states_raw$State
 
 final_polls = merge(final_polls, states_raw, by="state", all.x=T)
 final_polls$Abbrev = as.character(final_polls$Abbrev)
-final_polls$Abbrev = replace_na(final_polls$Abbrev, "US")
+final_polls$Abbrev = replace_na(final_polls$Abbrev, "U.S.")
 final_polls$state = final_polls$Abbrev
 
 econ_pres_polls = final_polls
-saveRDS(econ_pres_polls, "cleaned_pres_polls.rds")
+#saveRDS(econ_pres_polls, "cleaned_pres_polls.rds")
 ```
 
-```{r }
+```{r eval=F}
 
 econ_pres_polls = read.csv("2020 US presidential election polls - all_polls.csv")
 
@@ -95,7 +97,7 @@ econ_pres_polls = econ_pres_polls %>%
 states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
 
 econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
-saveRDS(econ_pres_polls, "cleaned_econ_polls.rds")
+#saveRDS(econ_pres_polls, "cleaned_econ_polls.rds")
 ```
 
 ```{r}
@@ -272,6 +274,7 @@ jags_data$states_corr_mat <- states_cov_matrix
 #eigen(test_matrix)
 
 #be sure to add your added parameters to parameters.to.save
+set.seed(15)  ## seed(15) --> 7.3% win probability
 jags_sims_mv <- jags(data = jags_data,model.file = model_mv, parameters.to.save = c("theta","Sigma","p","sigma2_y"),
 n.iter = 10000)
 
@@ -300,8 +303,8 @@ colnames(elec_sims) <- states
 ```{r}
 elec_votes_df = read.csv("electoral_votes.csv")
 
-blue_EVs_2016 = sum(elec_votes_df$EV*elec_votes_df$blue2016) + 3 # DC
-safe_blue_2020 = blue_EVs_2016  ## Will subtract states in model
+blue_EVs_2012 = sum(elec_votes_df$EV*elec_votes_df$blue2012) + 3 # DC
+safe_blue_2016 = blue_EVs_2012  ## Will subtract states in model
 
 ec_bystate = c()
 
@@ -309,8 +312,8 @@ for (st in states) {
   st_EVs = elec_votes_df[elec_votes_df$Abbrev==st,"EV"]
   ec_bystate = c(ec_bystate, st_EVs)
   
-  if (elec_votes_df[elec_votes_df$Abbrev==st,"blue2016"] == 1) {
-    safe_blue_2020 = safe_blue_2020 - st_EVs
+  if (elec_votes_df[elec_votes_df$Abbrev==st,"blue2012"] == 1) {
+    safe_blue_2016 = safe_blue_2016 - st_EVs
   }
 }
 
@@ -318,7 +321,7 @@ for (st in states) {
 
 ec_votes_inc_states <- ((elec_sims>50) %*% diag(ec_bystate)) %>% rowSums() #+ 232
 
-ec_votes_dem = ec_votes_inc_states+safe_blue_2020 #anything else Biden should win (CT, Hawaii, IL, RI, DC)
+ec_votes_dem = ec_votes_inc_states+safe_blue_2016 #anything else Biden should win (CT, Hawaii, IL, RI, DC)
 
 # anything else for Trump (6 Arkansas, 5 Nebraska, 11 Tennessee, 3 S Dakota, 3 Wyoming) 
 
