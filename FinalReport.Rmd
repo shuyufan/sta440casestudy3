@@ -296,7 +296,7 @@ rownames(pres_res) = c("Win Probability", "Estimated EC Votes",
 kable(t(pres_res), caption = "Predicted Probability of Winning and Electoral Vote Count")
 ```
 
-The probability that Trump wins re-election is `r round(p_trump_win,2)`. The predicted electoral colleges votes for Trump is `r round(538-mean(ec_votes_dem),0)`.
+The probability that Trump wins re-election is `r round(p_trump_win,2)`. The predicted electoral colleges votes for Trump is `r round(538-mean(ec_votes_dem),0)` with a 95% confidence interval of (`r round(538-quantile(ec_votes_dem,0.975))`, `r round(538-quantile(ec_votes_dem,0.025))`).
 
 ```{r pres-plot, echo = F}
 trump_pwin_time = NULL
@@ -322,7 +322,13 @@ ggplot(trump_pwin_time, aes(x = days_bf_election-1, y = exp_pwin, color = state)
 
 *insert Figure label* shows how Trump's probability of winning the election changes over the 60 days before the election in each state of interest.
 
-*think of other things (include a backup)*
+```{r}
+pres_state_df = data.frame(state = states, pwin = (elec_sims>50) %>% colMeans())
+plot_usmap(data = pres_state_df, values = "pwin", color = "black") + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0.5,
+                       aesthetics = "fill", name = "Predicted Probability of Win for Biden", label = scales::comma) + 
+  theme(legend.position = "right")
+```
 
 ### Senate Election Model
 
@@ -334,7 +340,7 @@ jags_sims = readRDS("senate_model_output.rds")
 states = c("Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
 elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
 colnames(elec_sims) <- states
-(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+(elec_sims>50) %>% colMeans() 
 ```
 
 ```{r prob-republican-control, include = F}
@@ -416,7 +422,13 @@ ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) +
   labs(x = "Number of Democrat Seats", y = "Count")
 ```
 
-*more plots (see Lynn EDA for us map)*
+```{r}
+senate_state_df$pwin = preds
+plot_usmap(data = senate_state_df, values = "pwin", color = "black") + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 50,
+                       aesthetics = "fill", name = "Predicted Probability of Win for Democrats", label = scales::comma) + 
+  theme(legend.position = "right")
+```
 
 ## House Election Model
 
@@ -458,7 +470,6 @@ for (i in 1:length(districts)) {
 ```
 
 ```{r, echo = F}
-# ROUND
 house_res = matrix(round(rbind(rep_vote_shares, rep_intervals),2), nrow = 13, byrow = TRUE)
 house_res = house_res[, c(1,3,2)]
 house_res[12,3] = 0
@@ -469,10 +480,14 @@ rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
 kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
 ```
 
-From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50).
+From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50).
 
 ```{r, eval = F}
-nc_cong_dist <- rgdal::readOGR("HB 1029, 3rd Edition - Shapefile/C-Goodwin-A-1-TC.shp")
+download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
+# Unzip this file. You can do it with R (as below), or clicking on the object you downloaded.
+system("unzip nc_map.zip")
+
+nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
 
 nc_cong_dist@data <- nc_cong_dist@data %>% 
   mutate(rep_vote_shares = rep_vote_shares) %>%
@@ -483,7 +498,75 @@ nc_cong_dist@data <- nc_cong_dist@data %>%
     rep_vote_shares >= 75 ~ 4,
     TRUE ~ rep_vote_shares
   ))
+
   
+# 'fortify' the data to get a dataframe format required by ggplot2
+nc_cong_dist_df <- broom::tidy(nc_cong_dist, region = "DISTRICT")
+
+rep_vote_shares_df = data.frame(dist = seq(1:13), vote_share = rep_vote_shares)
+
+nc_cong_dist_vs_df = merge(nc_cong_dist_df,rep_vote_shares_df, all.x = TRUE, by.x = "id", by.y = "dist" ) %>%
+  mutate(binned_rep_vs = case_when(
+    vote_share >= 75 ~ 4,
+    vote_share >= 50 ~ 3,
+    vote_share >= 25 ~ 2,
+    vote_share >= 0 ~ 1,
+    TRUE ~ vote_share
+  )) %>%
+  mutate(dist_color = case_when(
+    binned_rep_vs == 1 ~ "#0015BC",
+    binned_rep_vs == 2 ~ "#B0CEFF",
+    binned_rep_vs == 3 ~ "#FFCCCB",
+    binned_rep_vs == 4 ~ "#FF0000",
+    TRUE ~ ""
+  ))
+
+ggplot()+
+  geom_polygon( data=mapbase,
+                aes(long, lat, group = region, fill = region),
+                alpha = 0.3) + 
+  coord_fixed() + theme_void() + 
+  geom_text(data=cnames,
+            aes(x, y , label = abb),
+            color= "black", size=3, fontface = 2,
+            hjust = 0.5, vjust = 0.5) + #central alignment
+  scale_fill_discrete(guide = F)
+
+# use midpoint of county to find where labels should go
+rnames <- aggregate(cbind(long, lat) ~ id, data=nc_cong_dist_vs_df, 
+                    FUN=function(x) mean(range(x)))
+
+# adjust where labels should go because counties aren't exactly square
+rnames$lat[which(rnames$id==11)] = rnames$lat[which(rnames$id==11)]-20500
+rnames$lat[which(rnames$id==10)] = rnames$lat[which(rnames$id==10)]+25000
+rnames$lat[which(rnames$id==13)] = rnames$lat[which(rnames$id==13)]-20000
+rnames$long[which(rnames$id==13)] = rnames$long[which(rnames$id==13)]-12000
+
+rnames$lat[which(rnames$id==8)] = rnames$lat[which(rnames$id==8)]+10500
+rnames$long[which(rnames$id==8)] = rnames$long[which(rnames$id==8)]+8000
+
+rnames$lat[which(rnames$id==9)] = rnames$lat[which(rnames$id==9)]+20500
+rnames$long[which(rnames$id==7)] = rnames$long[which(rnames$id==7)]-20000
+rnames$lat[which(rnames$id==7)] = rnames$lat[which(rnames$id==7)]-18000
+
+rnames$lat[which(rnames$id==3)] = rnames$lat[which(rnames$id==3)]-20500
+
+ggplot() +
+  geom_polygon(data = nc_cong_dist_vs_df, 
+               aes(x = long, y = lat, group = group),
+               fill=nc_cong_dist_vs_df$dist_color#,"#0015BC", "#B0CEFF")
+               , color="white") +
+      geom_text(data=rnames, aes(long, lat, label = id), size=3) +
+
+    # geom_text(data=nc_cong_dist_vs_df,
+    #         aes(x = long, y = lat, group = group, label = dist_id),
+    #         color= "black", size=3, fontface = 2,
+    #         hjust = 0.5, vjust = 0.5) +
+
+  theme_void()
+  #central alignment
+
+
 nc_cong_dist_df <- broom::tidy(nc_cong_dist, binned_rep_vs = "binned_rep_vs")
 head(nc_cong_dist_df)
 
