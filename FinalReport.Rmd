@@ -69,16 +69,31 @@ library(ggplotify)
 library(brms)
 library(tidybayes) # easy residuals
 library(usmap)
+library(directlabels)
 #library(xtable)
 ```
 
 ## Introduction
 
+The United States is getting closer to the 2020 presidential and Congressional elections on November 3, 2020. All 435 seats in the United States House of Representatives, 35 of the 100 seats in the United States Senate, and the office of President of the United States are up for election (Wikipedia, 2020). With the current polarizing political landscape, the election outcomes are significant to determine the next stage of this country. Polarization also makes election prediction both less and more difficult. It is less difficult because election results are less subject to election or candidate-specific factors, and it is more difficult as elections become increasingly close and fierce competitions, especially for presidential elections (Gelman, 2020). Therefore, we believe 2020 is a particularly challenging yet interesting year for statisticians to predict election outcomes and compare results with other predictions and the actual outcome to reflect on methodologies and unaccounted predictors. These election predictions not only inform the public about campaign trends and political sentiments but also help political strategists make decisions on allocating campaign resources for different candidates (Linzer et al.). American political pundits have been spending countless hours obtaining and analyzing relevant data to predict the election outcomes, and historical models and predictions and pre-election polls are two of the most important sources of information (Linzer et al.). In this report, similarly, we will also be using both literature review and polls for 2020 to build our prediction models.
+\newline
+We plan to build prediction models for the 2020 U.S. presidential election and the Senate election nationwide. Also, among all states, we decide to further predict the U.S. House election outcome for North Carolina, as it has been a swing state in presidential and Congressional elections for decades. Since 1996, the Republican statewide vote share in Congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014" (Perrin et al.). To summarize, this report aims to use statistical models to predict (1) the outcome of the presidential election, (2) whether the US Senate remains in Republican control, (3) the electoral college vote, (4) the outcomes of all NC Congressional elections (the 13 federal Representatives to Congress), and (5) the outcome of the NC Senate election, including characterization of uncertainty in predictions.
+
 ## Data Description
 
-In literature, election prediction relies on polling data as well as "the fundamentals", which are economic and demographic data (The Economist, 2020) *cite in Reference*. To forecast the outcomes of presidential election, senate election and house election (for North Carolina only), we obtained 2020 presidential polling data from *The Economist*, 2020 senate and house polling data as well as partisan lean data from *FiveThirtyEight*. 
+In literature, election prediction relies on polling data as well as the fundamentals, which are economic indicators (The Economist, 2020) and voter turnout by demographic groups (Hansford, et al.). To forecast the outcomes of presidential election, senate election and house election (for North Carolina only), we obtained 2020 presidential polling data from *The Economist*, 2020 senate and house polling data as well as partisan lean data from *FiveThirtyEight*. 
 
-The fundamentals data were retrieved from various online sources, such as Adrew Gelman's presidential election prediction model opensource (for correlation across states and historical incumbent party's June approval rating), Federal Reserve Economic Data (for second quarter real income growth), and NC Board of Elections website (for 2020 NC registered voter demographics). Please refer to Appendix B for a detailed description of all data sets used. 
+The fundamentals data were retrieved from various online sources, including Andrew Gelman's presidential election prediction model Github repository (for correlation across states and historical incumbent party's June approval ratings), Federal Reserve Economic Data (for second quarter real income growth), and NC Board of Elections website (for 2020 NC registered voter demographics). Please refer to Appendix B for a detailed description of all data sets used. 
+
+## Data Processing and Missing Data
+
+For both the President and Senate models, we had to choose which states we considered to be "battlegrounds" to include in the models. We chose states for the models separately, since some states have a competitive race for President but not for Senate or vice versa. 
+\newline
+For the presidential election data, we choose to use polling data from 30 days before the election (as opposed to over 30 days), as this aligns with Andrew Gelman's observation that polling data becomes more predictive as the day of poll becomes closer to election day (The Economist). Note that state-wide polls 30 days or less are unavailable for Oregon, Idaho, Wyoming, Nebraska, North Dakota, Illinois, Tennessee, Arkansas, Mississippi, and many Northeastern states. But these states are not swing states in recent elections, so we did not include those in our modeling process. For modeling, we will filter out those states with obvious party preferences and focus on those states showing percentages swinging right above or below 50%. For the presidential model, the states chosen are Arizona, Florida, Georgia, Iowa, Michigan, Minnesota, Nevada, New Hampshire, North Carolina, Ohio, Pennsylvania, Texas, and Wisconsin. These thirteen states are swing states in the plot, and are rated as either "Toss Up", "Lean Republican", or "Lean Democrat" races (the three most competitive categories) by the Cook Political Report (CITE), an nonpartisan elections newsletter, as of October 28. These states are also projected to be competitive in the Presidential race by both the FiveThirtyEight and Economist models. We select poll responses from likely voters only, since it is known that using all responses may overestimate support for the Democratic party, according to FiveThirtyEight (Silver, 2014). 
+\newline
+For the Senate model, the states chosen are Alabama, Alaska, Arizona, Colorado, Georgia, Iowa, Kansas, Maine, Michigan, Montana, North Carolina, South Carolina, and Texas. Similarly, for states such as California with strong historical party preferences, state-wide polls within 30 days of election are missing, but the missing data does not hurt our modeling process as we are only focusing on the swing states. There is also a special election for the Senate in Georgia in addition to the regularly scheduled election. These fourteen races are rated as either "Toss Up", "Lean Republican", or "Lean Democrat" (the three most competitive categories) by the Cook Political Report (CITE) as of October 29. These states are also projected to have competitive Senate races by both the FiveThirtyEight and Economist models.
+\newline
+For the U.S. House election, due to the scarcity of poll responses for the NC House elections, we included all poll responses within 115 days of the election. We will supplement the polls with the results from our interim report to predict the House election for NC.
 
 *Appendix B stuff*
 
@@ -90,18 +105,17 @@ The fundamentals data were retrieved from various online sources, such as Adrew 
 - `abramowitz_additional.csv`: Supplemented `abramowitz_data.csv` with the corresponding year's 2nd quarter real income growth, 3rd quarter real income growth (data from *FRED* https://fred.stlouisfed.org/series/A067RO1Q156NBEA) and S&P stock performance 3 months prior to the election (data from https://www.multpl.com/s-p-500-historical-prices/table/by-month). 
 
 ### Senate Election Model: 
-- `senate_polls.csv`: *this is from course website* https://data.fivethirtyeight.com/ ?
+- `senate_polls.csv`: *this is from course website* https://projects.fivethirtyeight.com/polls-page/senate_polls.csv
 - `partisan_leans_538.csv`: same as the data set in presidential election model
 - We also incroporated incumbency advantage in the model, which as *FiveThirtyEight* suggests, is on average 2.6 for senate incumbents (https://fivethirtyeight.com/features/how-much-was-incumbency-worth-in-2018/).
 
 ### House Election Model (for North Carolina):
-- `house_polls.csv`: *this is from course website* https://data.fivethirtyeight.com/ ?
+- `house_polls.csv`: *this is from course website* https://projects.fivethirtyeight.com/polls-page/house_polls.csv
 - `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
-
 
 ## Exploratory Data Analysis
 
-```{r load data}
+```{r load data, include = F}
 pres_eda_df = readRDS("cleaned_pres_polls.rds")
 econ_eda_df = readRDS("cleaned_econ_polls.rds")
 econ_state_df = econ_eda_df %>%
@@ -114,42 +128,60 @@ senate_state_df = senate_eda_df %>%
   summarise(n=n(),avg=mean(y))
 ```
 
-```{r president EDA}
-#number of polls for each state in the economist paper data set
-plot_usmap(data = econ_state_df, values = "n", color = "red") + 
-  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
-  theme(legend.position = "right")
+```{r president EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Presidential Election Data Visualization"}
+#democrat percentage by states
+p1 <- plot_usmap(data = econ_state_df, values = "avg", color = "black") + 
+  scale_fill_continuous(low = "red", high = "blue",name = "Average Democrat Vote Share", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For Biden's Vote Share Among States of Interest")
 #democrat percentage in polling data
-ggplot(econ_eda_df, aes(days_to_election, y)) + geom_bin2d()
+manualcolors<-c('black','forestgreen', 'red2', 'orange', 'cornflowerblue', 
+                'magenta', 'tan4', 'darkblue', 
+                'mediumorchid1','firebrick4',  'yellowgreen', 'lightsalmon','darkgray')
+p2 <- ggplot(econ_eda_df, aes(days_to_election, y, color=state)) + geom_point() + labs(y="Percentage", x = "Days to Election", title = "Does Biden's Vote Share Varies \n With Days To Election In Polls?") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line")) + scale_x_reverse() + scale_color_manual(values=manualcolors)
+
+grid.arrange(grobs = list(p1,p2), ncol = 2)
+```
+After initial data cleanup for analysis, Figure 1 aims to explore polling data we have for the 2020 presidential election within 30 days of election, after filtering for the states of interest. The left plot shows that most states, as the polls indicate, have a vote share higher than 50% for Biden, averaging on all the polls available for each state respectively. While unsurprisingly Washington and California turn out to be blue, Louisiana, for example, still shows a deep red color. The right plot shows that within 30 days to election, variations exist for Biden support rate among polls within individual states. Combined with abundant literature that takes time into account for outcome prediction models, we will take days to election as a part of our model prediction as well (Gelman, 2020).
+
+```{r senate EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="U.S. Senate Election Data Visualization"}
+manualcolors<-c('black','forestgreen', 'red2', 'orange', 'cornflowerblue', 
+                'magenta', 'tan4', 'darkblue', 
+                'mediumorchid1','firebrick4',  'yellowgreen', 'lightsalmon','darkgray')
 #democrat percentage by states
-plot_usmap(data = econ_state_df, values = "avg", color = "black") + 
-  scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
-  theme(legend.position = "right")
+s1 <- plot_usmap(data = senate_state_df, values = "avg", color = "black") + 
+  scale_fill_continuous(low = "red", high = "blue",name = "Average Democrat Vote Share", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For Democrat Vote Share Among States of Interest")
+s2 <- ggplot(senate_eda_df, aes(days_to_election, y,color=state)) + geom_point() + labs(y="Percentage", x = "Days to Election", title = "Does Democrat Vote Share Varies \n With Days To Election In Polls?") + theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line")) + scale_x_reverse() + scale_color_manual(values=manualcolors)
+
+grid.arrange(grobs = list(s1,s2), ncol = 2)
 ```
 
-```{r senate EDA}
-#number of polls for senate
-plot_usmap(data = senate_state_df, values = "n", color = "red") + 
-  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
-  theme(legend.position = "right")
-#biden percentage in polling data
-ggplot(senate_eda_df, aes(days_to_election, y)) + geom_bin2d()
-#democrat percentage by states
-plot_usmap(data = senate_state_df, values = "avg", color = "black") + 
-  scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
-  theme(legend.position = "right")
+Similarly, Figure 2 visualizes the polling data we have for the 2020 U.S. Senate election, also within 30 days of election and after filtering for the states of interest. The left plot shows that most states, as the polls indicate, have a vote share higher than 50% for the Democratic Party, averaging on all the polls available for each state respectively. Nebraska is the only state with a bright red color in this data set. The right plot shows that within 30 days to election, variations exist for the Democratic party vote share among polls within individual states, such as the trend seen for North Carolina as Democratic Party vote share decreases getting closer to the election. We will take days to election as a part of our model prediction as well.
+
+```{r house EDA load data, include=F}
+load("vote_share_df.Rdata")
+vote_share_df$Dem_vote_share <- round(vote_share_df$Dem_vote_share,2)
 ```
 
-```{r house EDA}
-#biden percentage in polling data
-ggplot(house_eda_df, aes(x=days_to_election, y=y,color=as.factor(seat_number))) + geom_point()
+```{r president EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Democratic Vote Share Predicted By The Interim Report"}
+#vote share by cong district
+ggplot(data=vote_share_df, aes(x=cong_dist, y=Dem_vote_share)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  geom_text(aes(label=Dem_vote_share), vjust=-0.3, size=3.5)+
+  theme_minimal()
 ```
+Figure 3 shows the different Democratic Party vote shares predicted by our interim report for all congressional districts in North Carolina. After predicting for voter turnout in the interim report, we use the party registration for predicted voters to get the vote share for Democratic Party. First, we grouped predicted voters for congressional districts. There are three categories in party registration: Democratic, Republican, and other (indicating a third party or unaffiliated). Within each congressional district, we split the `other` population in half, and add it to both the Democratic Party vote count and the Republican Party vote count, as FiveThirtyEight used the same approach to get vote share for their House predictions, shown in[https://projects.fivethirtyeight.com/2020-election-forecast/house/]. Among 13 districts, 6 of them have a Democratic Party vote share higher than 50%. 
 
-## Methods
+## Method
+
+Similarly to prior work (Linzer 2013), we use a hierarchical model structure for our election models to overcome the limitation that not every state is polled on every day, allowing the model to borrow data across states (or Congressional districts). This also helps account for the fact that polls from each individual state are correlated data observations. 
+
+To specify priors for the mean of two-party vote share for Democrats in each state or district, we used a combination of state partisanship, economic fundamentals, candidate incumbency, and projected voter turnout based on demographics. First, we started with state or district partisan lean calculated by FiveThirtyEight (see "FiveThirtyEight's Partisan Lean" in references). Partisan lean is the average difference between how a state or district votes and how the country votes overall, based on results from the past two presidential elections as well as statewide elections in 2018. For example, North Carolina has a partisan lean of R+4, meaning that in a 50/50 political environment nationwide, a Republican would be expected to win North Carolina by 4 points. For each partisan lean, we turn the parsian lean into a prior mean of Democratic vote share by adding or subtracting half the partisan lean from 50%. North Carolina is a Republican-leaning state, so we subtract 2 from 50% to get a partisan lean prior of 48% (note that the Republican would then get 52% of the two-party vote, resulting in an R+4 margin of victory).
 
 ### Presidential Election Model
 
-The response we will use is $Y_k$, Biden's share of the two-party vote using the following model where the poll $k$ (of $K$=*3361* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
+For the presidential model, the states chosen are Arizona, Florida, Georgia, Iowa, Michigan, Minnesota, Nevada, New Hampshire, North Carolina, Ohio, Pennsylvania, Texas, and Wisconsin. These thirteen states are rated as either "Toss Up", "Lean Republican", or "Lean Democrat" races (the three most competitive categories) by the Cook Political Report (as of October 28), an nonpartisan elections newsletter. These states are also projected to be competitive in the Presidential race by both the FiveThirtyEight and Economist models. We select poll responses from likely voters only, since it is known that using all responses may overestimate support for the Democratic party, according to FiveThirtyEight (Silver, 2014).
+The response we will use is $Y_k$, Biden's share of the two-party vote using the following model where the poll $k$ (of $K$=*3361 [insert final number]* polls) ended $t$ days (of $T=30$ days) before the election and was conducted on state $j$ (of $J$=13 states of interest). We choose to use polling data from 30 days before the election (as opposed to over 30 days), as this aligns with Andrew Gelman's observation that polling data becomes more predictive as the day of poll becomes closer to election day (The Economist).
 
 $Y_k \sim N(\theta_{jt},\sigma^2_{yj})$ \newline
 Priors for $\theta_{jt}$: 
@@ -165,14 +197,17 @@ $h_j = 0.1*\hat{\text{Presidental Fundamentals}_{2020}} + 0.9*\text{Vote Share f
 $\text{Presidental Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i  + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
 $\epsilon_i \sim N(0, \phi^2)$  \newline
 
-*where explain variables later the S&P stock growth three months prior to the election*
-*also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
-In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. Motivated by Andrew Gelman's method of computing the priors, we predict $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval rating of the incumbent party. When computing the 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). 
+For our presidential model, we wanted to incorporate state-level correlations that differ between each pair of states. For example, Wisconsin is much more similar to its Great Lakes neighbor Michigan both geographically and demographically than it is to Arizona, which is in the Southwest and has a much larger Hispanic population. So, we would expect that Wisconsin and Michigan have a higher correlation in their election results than Wisconsin and Arizona. In order to incorporate this into our presidential model, we used a multivariate normal distribution to model two-party vote share in each state, which allowed us to specify a covariance matrix for the states. We used a covariance matrix which was downloaded from the Economist forecast model (Gelman, 2020). These similarities between states were calculated by comparing their demographic and political profiles, such as the state's share of white voters and how urban/rural the state is.
 
-*explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
+In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval ratings of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
 
+*one sentence on hyperparameters*
+
+Presidential elections in the United States are decided by the Electoral College, so estimating percentage support in each state alone does not tell us who wins the election. For each set of MCMC samples of two-party vote share by state, we subsequently use the predicted winner in each state to add up the electoral votes of each candidate. For states not in the model, their electoral votes are allocated assuming they vote the same way as in 2016. The probability of President Trump winning re-election is then the probability that he receives 270 or more electoral votes across simulations. Note that although Maine and Nebraska allocate some electoral votes by Congressional District, only two electoral votes are competitive due to this wrinkle, so for simplicity we simply allocate all electoral votes to the statewide winner of each respective state.
 
 ### Senate Election Model
+
+For the Senate model, the states chosen are Alaska, Arizona, Colorado, Georgia, Iowa, Kansas, Maine, Michigan, Montana, North Carolina, South Carolina, and Texas. There is also a special election for the Senate in Georgia in addition to the regularly scheduled election. These fourteen races are rated as either "Toss Up", "Lean Republican", or "Lean Democrat" (the three most competitive categories) by the Cook Political Report (as of October 29). These states are also projected to have competitive Senate races by both the FiveThirtyEight and Economist models. Note that the Georgia special election actually has multiple Republicans and Democrats running on the same ballot. If no candidate wins over 50% of the vote, which is considered likely, the top two finishers will advance to a one-on-one runoff election in January (Ballotpedia, 2020). For simplicity, our model simply sums up the support for Republican candidates and compares that to the sum of the support for Democratic candidates, then treats this election like the others. (This is not the ideal way to simulate this election, but the difficulty of predicting turnout and the political environment for the January runoff election made this decision seem like the best one to make.) Once again, we only included poll respones from likely voters that responded within 30 days of the election.
 
 The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
 
@@ -187,11 +222,15 @@ $\sigma^2 \sim InvGamma(0.5,0.5)$ \newline
 $\mu_{j} \sim N(h_j,7.5^2)$  \newline
 $h_j = \text{Vote Share from Partisan Lean}_j + \text{Incumbency Advantage}_j$  \newline
 
-We took the predicted Democratic vote share for North Carolina to predict the outcome of the NC Senate election. *we incorporate voter turnout in the prior, see appendix A.2 - Cathy*
+For the U.S. Senate model we also take into account incumbency advantage. Analysis by FiveThirtyEight (Rakich, 2018) found that incumbent senators get a 2.6-point boost. For each incumbent was running a Senate race, depending on whether they were a Democrat or Republican, we either added or subtracted this incumbency adjustment with the prior mean computed from partisan lean.
+
+For the NC-specific prior, we supplemented partisan lean and incumbency adjustment with voter turnout predicted by the model in our Interim Report. When computing the prior for NC only, 10% weight is allocated to predicted Democratic vote share from turnout and demographics, and 90% weight is allocated to partisan lean and incumbency adjustment. The turnout is weighted much less because there is considerable uncertainty surrounding turnout because of the COVID-19 pandemic. See Appendix A.2 for more specifics on how the voter turnout model was used to compute predicted Democratic vote share.
+
+For predicting control of the U.S. Senate, things are complicated slightly by the fact that a 50/50 split of Senate seats is a possible outcome of the elections. In this case, the Vice President breaks the tie, so the party that wins the Presidential election will only need 50 Senate seats for a Senate majority, while the party that loses will need 51. Since our President model gives Democrat Joe Biden a very high chance of winning (discussed more below), we assume in the Senate model that Democrats will control the Senate in the case of a 50/50 split.
 
 ### House Election Model
 
-The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on district $j$ (where $j$ is in districts $1, \cdots, 11, 13$ of North Carolina). For district 12, the vote share is coded as 100 because there is only one candidate, and she is a Democrat.
+The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on district $j$ (where $j$ is in districts $1, \cdots, 11, 13$ of North Carolina). For district 12, the vote share is coded as 100 because there is only one candidate, and she is a Democrat. 
 
 $Y_k \sim N(\beta_{jt},\sigma^2_{yj})$ \newline
 $\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$ \newline
@@ -202,32 +241,516 @@ $\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newli
 $\beta_{j1} \sim N(h_j, 7.5)$  \newline
 $h_j = 0.9*\text{Vote Share from Partisan Lean}_j + 0.1*\text{Expected Vote Share from Voter Turnout}_j$  \newline
 
-$\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. *explain why 
 
-*explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
+According to FiveThirtyEight (Rakich, 2018),incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
+
+$\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. 
 
 
 ## Results
 
-## Model Validation and Sensitivity Checks
+### Presidential Election Model
+
+```{r read-in-pres-model, include = F}
+jags_sims_mv = readRDS("pres_model_output.rds")
+```
+
+```{r biden-prob-win, include = F}
+states = c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
+N_states = length(states)
+N_days = 30
+
+elec_sims <- jags_sims_mv$BUGSoutput$sims.list$theta[,,1]
+colnames(elec_sims) <- states
+(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+
+#elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
+#colnames(elec_sims) <- states
+#(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+
+#in other states: Biden: 232-13, Trump: 306-29-18-15-10-20
+#b_ex_votes <- 232-13; t_ex_votes <- 306-29-18-15-10-20
+```
+
+```{r prob-trump-wins, include = F}
+elec_votes_df = read.csv("electoral_votes.csv")
+
+blue_EVs_2016 = sum(elec_votes_df$EV*elec_votes_df$blue2016) + 3 # DC
+safe_blue_2020 = blue_EVs_2016  ## Will subtract states in model
+
+ec_bystate = c()
+
+for (st in states) {
+  st_EVs = elec_votes_df[elec_votes_df$Abbrev==st,"EV"]
+  ec_bystate = c(ec_bystate, st_EVs)
+  
+  if (elec_votes_df[elec_votes_df$Abbrev==st,"blue2016"] == 1) {
+    safe_blue_2020 = safe_blue_2020 - st_EVs
+  }
+}
+
+#ec_bystate = c(3, 9, 11, 55, 9, 3, 29, 16, 4, 6, 4, 11, 6, 8, 8, 11, 10, 4, 16, 10, 10, 6, 3, 15, 3, 4, 14, 5, 6, 29, 18, 7, 7, 20, 9, 3, 38, 0, 6, 11, 3, 12, 10, 5 )
+
+ec_votes_inc_states <- ((elec_sims>50) %*% diag(ec_bystate)) %>% rowSums() #+ 232
+
+ec_votes_dem = ec_votes_inc_states+safe_blue_2020 #anything else Biden should win (CT, Hawaii, IL, RI, DC)
+
+# anything else for Trump (6 Arkansas, 5 Nebraska, 11 Tennessee, 3 S Dakota, 3 Wyoming) 
+
+p_trump_win = 1 - mean(ec_votes_dem >= 270)
+p_trump_win
+```
+
+```{r pres-plot, echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{trumpwintime} Probability of Re-election for President Trump over the 30 Days Before Election Day"}
+trump_pwin_time = NULL
+for (j in 1:N_states) {
+  new_col = NULL
+for (t in 1:N_days) {
+  new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
+}
+  trump_pwin_time = cbind(trump_pwin_time, new_col)
+}
+colnames(trump_pwin_time) <- states
+
+trump_pwin_time  = as.data.frame(trump_pwin_time)%>%
+  gather(., "state", "exp_pwin") %>%
+  mutate(days_bf_election = rep(seq(1, N_days), N_states))
+
+ggplot(trump_pwin_time, aes(x = days_bf_election-1, y = exp_pwin, color = state)) +
+  geom_line() + geom_hline(yintercept = 0.5) + geom_vline(xintercept = 12, color = "blue") +
+  scale_x_reverse() + 
+  labs(x = "Days Before Election", y = "Trump's Probability of Winning")  +
+  geom_dl(aes(label=state), method=list("last.points", cex = 0.6)) +
+  theme(legend.position = "none")
+```
+
+```{r echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{trumpusmap} Plot of Predicted Presidential Result for States of Interest on Election Day}
+pres_state_df = data.frame(state = states, pwin = (elec_sims>50) %>% colMeans())
+plot_usmap(data = pres_state_df, values = "pwin", color = "black") + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0.5,
+                       aesthetics = "fill", name = "Predicted Probability of Voting Biden", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+
+\ref{trumpwintime} shows how Trump's probability of winning the election changes over the 60 days before the election in each state of interest. It appears that his probability of winning increased after the last presidential debate. *check for final results* From \ref{trumpusmap} we see that swing states such as Florida and Ohio are predicted to vote Trump while other swing states such as Pennsylvania and North Carolina are predicted to vote Biden. *check for final results* 
+
+
+```{r pres-res-table, echo = F}
+pres_res = matrix(c(round(p_trump_win,2), 
+                    round(1-p_trump_win,2),
+                    as.character(round(538-mean(ec_votes_dem))),
+                    as.character(round(mean(ec_votes_dem))),
+                    as.character(round(538-quantile(ec_votes_dem,0.975))),
+                    as.character(round(quantile(ec_votes_dem,0.025))),
+                    as.character(round(538-quantile(ec_votes_dem,0.025))),
+                    as.character(round(quantile(ec_votes_dem,0.975)))),
+                    ncol = 2, byrow = TRUE)
+colnames(pres_res) = c("Trump", "Biden")
+rownames(pres_res) = c("Win Probability", "Estimated EC Votes",
+                       "2.5% Quantile EC Votes", "97.5% Quantile EC Votes")
+kable(t(pres_res), caption = "Predicted Probability of Winning and Electoral Vote Count")
+```
+
+The probability that Trump wins re-election is `r round(p_trump_win,2)`. The predicted electoral colleges votes for Trump is `r round(538-mean(ec_votes_dem),0)` with a 95% confidence interval of (`r round(538-quantile(ec_votes_dem,0.975))`, `r round(538-quantile(ec_votes_dem,0.025))`).
+
+### Senate Election Model
+
+```{r read-senate-model, include = F}
+jags_sims = readRDS("senate_model_output.rds")
+```
+
+```{r democ-win-democ, include = F}
+states = c("Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
+elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
+colnames(elec_sims) <- states
+(elec_sims>50) %>% colMeans() 
+```
+
+```{r prob-republican-control, include = F}
+preds = (elec_sims>50) %>% colMeans()
+dem_wins = length(preds>0.5)
+
+dem_seats_up = c("New Hampshire", "Minnesota", "Michigan", "Massachusetts", "Illinois", "Delaware", "Alabama", "New Jersey", "New Mexico", "Oregon", "Rhode Island", "Virginia")
+
+dem_wins = c()
+
+for (i in 1:nrow(elec_sims)) {
+  preds = elec_sims[i,]
+  dem_wins = rbind(dem_wins, sum(preds>50))
+}
+
+dem_noelection = 35
+
+dem_safe = 0
+for (st in dem_seats_up) {
+  if ((!(st %in% states))&(!(st == "Alabama"))) {
+    dem_safe = dem_safe + 1
+  }
+}
+
+#dem_safe = length(safe_dem)
+
+dem_seats = dem_noelection + dem_safe + dem_wins
+prob_dem_control = mean(dem_seats >= 50)
+
+#dem_needed = 50 - (dem_noelection + dem_safe)
+
+#prob_dem_control = mean(dem_wins > dem_needed)
+
+prob_rep_control = 1-prob_dem_control
+prob_rep_control
+
+# rep_noelection = 30
+# rep_safe = length(safe_rep)
+```
+
+```{r echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{senateusmap} Plot of Predicted Senate Results for States of Interest on Election Day}
+senate_state_df$pwin = preds
+plot_usmap(data = senate_state_df, values = "pwin", color = "black") + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 50,
+                       aesthetics = "fill", name = "Predicted Probability of Win for Democrats", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+
+
+```{r echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{senatehist} Plot of Predicted Senate Results for States of Interest on Election Day}
+dem_seats_df = data.frame(dem_seats)  
+colnames(dem_seats_df) = "number_dem_seats"
+dem_seats_df = dem_seats_df %>%
+  mutate(blue = as.factor(ifelse(number_dem_seats >= 50, "Dem", "Rep")))
+
+minimum = min(dem_seats_df$number_dem_seats)-1
+maximum = max(dem_seats_df$number_dem_seats)+1
+
+ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) + 
+  geom_histogram(binwidth = 0.5) +
+  scale_x_discrete(limits=(minimum+1):(maximum-0.5)) +
+  scale_fill_manual(values=c("#0015BC","#FF0000")) + 
+  labs(x = "Number of Democrat Seats", y = "Count", fill = "Party")
+```
+
+From \ref{senateusmap} we see that for the Senate race, states such as Texas are predicted to lean heavily towards the Republican candidate and Democrats have a great than 50% chance of winning states such as Arizona and Michigan. From the histogram in \ref{senatehist} we see the distribution of the predicted number of Democrat seats point to a Democrat majority in the Senate, which is in agreement with the low probability that Republicans retain control of the Senate (`r round(prob_rep_control,2)`). 
+
+```{r tillis-cunningham-table, echo = F}
+elec_sims_df = data.frame(elec_sims)
+
+#nc_index = which(states == "North Carolina")
+cunningham_vote_share = mean(elec_sims_df$North.Carolina)
+tillis_vote_share = 100 - cunningham_vote_share
+
+cunningham_ci = quantile(elec_sims_df$North.Carolina, c(0.025, 0.975))
+tillis_ci = c(100 - as.numeric(cunningham_ci[2]), 100-as.numeric(cunningham_ci[1]))
+
+# tillis_vote_share
+# tillis_ci
+
+nc_senate_race = matrix(round(c(tillis_vote_share, tillis_ci,
+                                cunningham_vote_share, cunningham_ci),2), 
+                        nrow = 2, byrow = TRUE)
+colnames(nc_senate_race) = c("Estimate", "2.5% Quantile", "97.5% Quantile")
+rownames(nc_senate_race) = c("Tillis", "Cunningham")
+kable(nc_senate_race, caption = "Predicted Vote Share for Tillis-Cunningham Race")
+```
+
+For the NC Senate race (Tillis vs. Cunningham), the predicted vote share for Cunningham is `r round(cunningham_vote_share,2)`% with a 95% confidence interval of (`r round(cunningham_ci[1],2)`, `r round(cunningham_ci[2],2)`).
+
+## House Election Model
+
+```{r read-house-model, include = F}
+jags_sims_house = readRDS("house_model_output.rds")
+```
+
+```{r, include = F}
+districts <- paste("District",c(1:13))
+
+elec_sims <- jags_sims_house$BUGSoutput$sims.list$beta[,,1]
+colnames(elec_sims) <- districts
+#(elec_sims>50) %>% colMeans() #P(Biden Win) each state
+```
+
+```{r, include = F}
+dem_vote_shares = elec_sims %>% apply(2, mean)
+dem_vote_shares[12] = 100
+
+rep_vote_shares = 100 - dem_vote_shares
+rep_vote_shares
+```
+
+```{r, include = F}
+dem_intervals = elec_sims %>% apply(2, quantile, probs=c(0.025, 0.975))
+dem_intervals = unname(dem_intervals)
+dem_intervals[1,12] = 99.8
+dem_intervals[2,12] = 100
+
+rep_intervals = 100 - dem_intervals
+
+for (i in 1:length(districts)) {
+  print(districts[i])
+  print(rep_intervals[2,i])
+  print(rep_intervals[1,i])
+  cat("\n")
+}
+```
+
+```{r, echo = F}
+house_res = matrix(round(rbind(rep_vote_shares, rep_intervals),2), nrow = 13, byrow = TRUE)
+house_res = house_res[, c(1,3,2)]
+house_res[12,3] = 0
+colnames(house_res) = c("Estimate", "2.5% Quantile", "97.5% Quantile")
+rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
+                        "District 5", "District 6", "District 7", "District 8",
+                        "District 9", "District 10", "District 11", "District 12", "District 13")
+kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
+```
+
+```{r, eval = F}
+download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
+system("unzip nc_map.zip")
+```
+
+```{r, echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{housemap} Plot of Predicted Senate Results for States of Interest on Election Day}
+nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
+  
+# 'fortify' the data to get a dataframe format required by ggplot2
+nc_cong_dist_df <- broom::tidy(nc_cong_dist, region = "DISTRICT")
+rep_vote_shares_df = data.frame(dist = seq(1:13), vote_share = rep_vote_shares)
+nc_cong_dist_vs_df = merge(nc_cong_dist_df,rep_vote_shares_df, all.x = TRUE, by.x = "id", by.y = "dist" ) %>%
+  mutate(binned_rep_vs = case_when(
+    vote_share >= 75 ~ 4,
+    vote_share >= 50 ~ 3,
+    vote_share >= 25 ~ 2,
+    vote_share >= 0 ~ 1,
+    TRUE ~ vote_share
+  )) %>%
+  mutate(dist_color = case_when(
+    binned_rep_vs == 1 ~ "#0015BC",
+    binned_rep_vs == 2 ~ "#B0CEFF",
+    binned_rep_vs == 3 ~ "#FFCCCB",
+    binned_rep_vs == 4 ~ "#FF0000",
+    TRUE ~ ""
+  ))
+
+# use midpoint of county to find where labels should go
+rnames <- aggregate(cbind(long, lat) ~ id, data=nc_cong_dist_vs_df, 
+                    FUN=function(x) mean(range(x)))
+
+# adjust where labels should go because counties aren't exactly square
+rnames$lat[which(rnames$id==11)] = rnames$lat[which(rnames$id==11)]-20500
+rnames$lat[which(rnames$id==10)] = rnames$lat[which(rnames$id==10)]+25000
+rnames$lat[which(rnames$id==13)] = rnames$lat[which(rnames$id==13)]-20000
+rnames$long[which(rnames$id==13)] = rnames$long[which(rnames$id==13)]-12000
+
+rnames$lat[which(rnames$id==8)] = rnames$lat[which(rnames$id==8)]+10500
+rnames$long[which(rnames$id==8)] = rnames$long[which(rnames$id==8)]+8000
+
+rnames$lat[which(rnames$id==9)] = rnames$lat[which(rnames$id==9)]+20500
+rnames$long[which(rnames$id==7)] = rnames$long[which(rnames$id==7)]-20000
+rnames$lat[which(rnames$id==7)] = rnames$lat[which(rnames$id==7)]-18000
+
+rnames$lat[which(rnames$id==3)] = rnames$lat[which(rnames$id==3)]-20500
+
+ggplot() +
+  geom_polygon(data = nc_cong_dist_vs_df, 
+               aes(x = long, y = lat, group = group, fill = vote_share),
+               #fill=nc_cong_dist_vs_df$dist_color#,"#0015BC", "#B0CEFF"),
+               color="white") +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 50,
+                       aesthetics = "fill", name = "Republican Vote Share", label = scales::comma) + 
+      geom_text(data=rnames, aes(long, lat, label = id), size=3) + theme_void()
+```
+
+From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From \ref{housemap} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
+
+
+## Model Validation and Sensitivity Analysis
+
+For model validation, we trained our 2020 presidential election model on 2016 polling data and adjusted fundamentals accordingly. For instance, instead of predicting on 2020 economic indicators, we removed the year 2016 from the fundamentals training data and predicted on 2016 economic indicators. This 2016 model produced a 7% probability that Trump would win the presidency, which is within the range of predictions by respected models available in 2016 (The Economist, 2016). Polls were skewed in 2016, so it is expected that the model would not be entirely accurate.
+
+For sensitivity analysis, we adjusted the relative weights placed on the components of prior for the presidential election model. Instead of 10% fundamentals and 90% partisan lean, we ran a model with 50% fundamentals and 50% partisan lean multiple times and the predictions for Trump's re-election probability was generally higher (approximately 0.25) than that from our main model, which makes sense since economic fundamental model contains stock growth and is slightly favored toward Trump. However, the sensitivity analysis models still point to an unlikely re-election.
+
+$\sigma_{y j}$ 
+
+
+
+President model: unif(0,1) -- I think this makes it more uninformative for gamma (does this hold for inv gamma?)
+Pr(Trump wins) = 0.128, 0.1176667, 0.2456667
+TLDR: comparable?
+Senate model: 
+mu0 ~ N(priors, 1) (less variance)
+Pr(Rep control) = 0.1656667
+unif(0,1)
+Pr(Rep control) = 0.1436667
+sigma2_0_inv ~ gamma(3,0.5) (stronger prior?)
+Pr(Rep control) = 0.07466667
+TLDR: Tillis vote share + confidence intervals have been comparable, probability of republican control more sensitive
+
+To account for shock events, 
 
 ## Diagnostics
+
+```{r PPC for president}
+```
+
+```{r PPC for senate}
+```
+
+```{r PPC for house}
+```
+
+## Discussion and Limitations
+
+As polls are an important part of our data sources, we acknowledge that with the COVID-19 pandemic, polling has moved from in-person interviews to phone calls, live surveys and internet questions, which could lead to unknown biases with its lower response rates(Gelman, 2020). A recent election prediction study shows that state polls have much higher margins of error than expected (Shirani-Mehr et al., 2018). 
 
 # Appendix A
 
 ## A.1 Presidential Election Model
 
+### Raw Model Output
+
+```{r}
+options(max.print = 999999999)
+
+pres_res = as.data.frame(jags_sims_mv$BUGSoutput$summary[,-c(8,9)])
+
+no_p = pres_res[!grepl("p", rownames(pres_res)),]
+no_deviance = no_p[!grepl("deviance", rownames(no_p)),]
+
+no_deviance
+
+cat("mean Rhat:", mean(as.data.frame(jags_sims_mv$BUGSoutput$summary)$Rhat), '\n')
+cat("mean effective sample size:", mean(as.data.frame(jags_sims_mv$BUGSoutput$summary)$n.eff))
+```
+
 ## A.2 Senate Election Model
+
+### Raw Model Output
+
+```{r}
+options(max.print = 999999999)
+
+pres_res = as.data.frame(jags_sims$BUGSoutput$summary[,-c(8,9)])
+
+no_p = pres_res[!grepl("p", rownames(pres_res)),]
+no_deviance = no_p[!grepl("deviance", rownames(no_p)),]
+
+no_deviance
+
+cat("mean Rhat:", mean(as.data.frame(jags_sims$BUGSoutput$summary)$Rhat), '\n')
+cat("mean effective sample size:", mean(as.data.frame(jags_sims$BUGSoutput$summary)$n.eff))
+```
 
 ## A.3 House Election Model
 
-*insert interim report model here*
+### Raw Output for Appendix
+
+```{r}
+options(max.print = 999999999)
+
+pres_res = as.data.frame(jags_sims_house$BUGSoutput$summary[,-c(8,9)])
+
+no_p = pres_res[!grepl("p", rownames(pres_res)),]
+no_deviance = no_p[!grepl("deviance", rownames(no_p)),]
+
+no_deviance
+
+cat("mean Rhat:", mean(as.data.frame(jags_sims_house$BUGSoutput$summary)$Rhat), '\n')
+cat("mean effective sample size:", mean(as.data.frame(jags_sims_house$BUGSoutput$summary)$n.eff))
+```
+
+
+## Interim Report Model
+
+$$
+\begin{aligned}
+Vote_i \sim Binomial(n_i, \pi_i) \\
+logit(\pi_i) = \alpha_0 + \Sigma_{j = 1,2,3}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{j = 5,6}\beta_j*I(Gender_i = Gender \ Category_g) +\\
+\Sigma_{j = 7,8}\beta_j*I(Race_i = Race \ Category_r) + \Sigma_{j = 9,10,11}\beta_j*I(Age_i = Age \ Category_a) +\\
+\Sigma_{j = 12,13}\beta_j*I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 14,...,17}\beta_j*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 18,...,21}\beta_j*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 22,...,27}\beta_j*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
+\Sigma_{j = 28,...,33}\beta_j*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
+\end{aligned}
+$$
+
+where:
+$$
+\begin{aligned}
+Income \ Category_s \in \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\} \\
+Gender \ Category_g \in \{Male, Unspecified\} \\
+Race \ Category_r \in \{Black, Other\} \\
+Age \ Category_a \in \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
+Party \ Category_p \in \{Republican, \ Other\}
+\end{aligned}
+$$
+
+Where $\pi_i$ is the probability that subgroup $i$ votes. $Vote_i$ is the number of people in the $i$th subgroup that voted in the 2016 election. The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
 We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district.
 
 # Appendix B
 
-# Appendix C (plots and other miscellaneous output)
+# Appendix C 
+
+## Traceplots for Presidential Model
+
+```{r, eval = F}
+states = c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
+N_states = length(states)
+
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+parameters = c(betas_day_of_election)
+
+tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+
+tps <- function(var){
+  ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
+    geom_line() +
+    labs(x ="Iterations", y = as.name(var))
+}
+
+all_beta_trace = lapply(names(tp_vars), tps)
+do.call(grid.arrange, all_beta_trace)
+```
+
+## Traceplots for Senate Model
+
+```{r, eval = F}
+states = c("Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
+N_states = states %>% length
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("beta.", i, ".1.")} )
+parameters = c(betas_day_of_election)
+
+tp_vars = data.frame(jags_sims$BUGSoutput$sims.matrix)[,parameters]
+
+tps <- function(var){
+  ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
+    geom_line() +
+    labs(x ="Iterations", y = as.name(var))
+}
+
+all_beta_trace = lapply(names(tp_vars), tps)
+do.call(grid.arrange, all_beta_trace)
+```
+
+## Traceplots for House Model
+
+```{r, eval = F}
+# CHANGE TO BE HOUSE SPECIFIC, IT WOULD BE DISTRCITS
+betas_day_of_election = sapply(1:13, function(i) {paste0("beta.", i, ".1.")} )
+parameters = c(betas_day_of_election)
+
+tp_vars = data.frame(jags_sims_house$BUGSoutput$sims.matrix)[,parameters]
+
+tps <- function(var){
+  ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +
+    geom_line() +
+    labs(x ="Iterations", y = as.name(var))
+}
+
+all_beta_trace = lapply(names(tp_vars), tps)
+do.call(grid.arrange, all_beta_trace)
+```
 
 ## References
 1. Linzer, D. A. (2013). Dynamic Bayesian Forecasting of Presidential Elections in the States. Journal of the American Statistical Association, 108(501), 124-134. doi:10.1080/01621459.2012.737735
@@ -284,6 +807,49 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 25. Igielnik, R. (2020). Men and Women in the U.S. Continue to Differ in Voter Turnout Rate. Retrieved October 22, 2020, from https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/
 \newline
 26. Akee, R. (2019). Voting and Income. Retrieved October 22, 2020, from https://econofact.org/voting-and-income
+\newline
+27. Wikipedia. 2020 United States elections. (2020, October 27). Retrieved October 31, 2020, from https://en.wikipedia.org/wiki/2020_United_States_elections
+\newline
+28. Gelman, A., &amp; Heidemanns, M. (2020). President-Forecasting the US 2020 elections. Retrieved November 01, 2020, from https://projects.economist.com/us-2020-forecast/president
+\newline
+29. Gelman, A., Hullman, J., Wlezien, C., & George, E. M. (2020). Information, incentives, and goals in election forecasts. Judgment and Decision Making, 15(5), 863-880. 
+\newline
+30. Gelman, A. and Heidemanns, M. (2020). President--Forecasting the US 2020 Elections | The Economist. Retrieved October 31, 2020 from https://projects.economist.com/us-2020-forecast/president
+\newline
+31. The Cook Political Report (2020). 2020 Electoral College Ratings. Retrieved October 31, 2020 from https://cookpolitical.com/sites/default/files/2020-10/EC%20Ratings.102820.pdf
+\newline
+32. The Cook Political Report (2020). 2020 Senate Race Ratings. Retrieved October 31, 2020 from https://cookpolitical.com/ratings/senate-race-ratings
+\newline
+33. Ballotpedia (2020). United States Senate special election in Georgia, 2020. Retrieved October 31, 2020 from https://ballotpedia.org/United_States_Senate_special_election_in_Georgia,_2020
+\newline
+34. FiveThirtyEight (2020). FiveThirtyEight's Partisan Lean. Retrieved October 31, 2020 from https://github.com/fivethirtyeight/data/tree/master/partisan-lean
+\newline
+35. Rakich, N. (2018). How Much Was Incumbency Worth In 2018? Retrieved October 31, 2020 from https://github.com/fivethirtyeight/data/tree/master/partisan-lean
+\newline
+?? Nilsen, E. (2020). Georgia’s two super-competitive Senate races, explained. Retrieved October 31, 2020 from https://www.vox.com/21536826/georgia-senate-race-ossoff-loeffler-warnock-perdue
+\newline
+36. Gillespie, A. et al. (2020). Race for the Senate 2020: Experts’ views from the states. Retrieved October 31, 2020 from https://www.brookings.edu/blog/fixgov/2020/10/30/race-for-the-senate-2020-experts-views-from-the-states/
+\newline
+37. Delsiver, D. (2020). Most Senate Elections Reflect States’ Presidential Votes. Retrieved October 31, 2020 from https://www.pewresearch.org/fact-tank/2020/09/01/most-senate-elections-reflect-states-presidential-votes/
+\newline
+38. Silver, N. (2014) Registered Voter Polls Will (Usually) Overrate Democrats.
+Retrieved October 31, 2020 from https://fivethirtyeight.com/features/registered-voter-polls-will-usually-overrate-democrats/
+\newline
+39. The Economist. (2016). Hillary Clinton has got this. Probably. Very probably https://www.economist.com/graphic-detail/2016/11/08/hillary-clinton-has-got-this-probably-very-probably
+\newline
+40. Shirani-Mehr, H., Rothschild, D., Goel, S., &amp; Gelman, A. (2018). Disentangling Bias and Variance in Election Polls. Journal of the American Statistical Association, 113(522), 607-614. doi:10.1080/01621459.2018.1448823
 
+## Additional EDA
+```{r Additional EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Presidential Election Data Visualization"}
+#number of polls for each state in the economist paper data set
+plot_usmap(data = econ_state_df, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For The Number of Filtered Polls Among States")
+```
 
-
+```{r Additional EDA Senate, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Senate Election Data Visualization"}
+#number of polls for senate
+plot_usmap(data = senate_state_df, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For The Number of Filtered Polls Among States")
+```

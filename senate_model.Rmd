@@ -77,7 +77,7 @@ non_appointed_incumbents = c("New Hampshire", "Minnesota", "Michigan", "Massachu
 # what the most competitive races are based on 538 and economist metrics, Cook Polit Rep
 states_of_interest = c("Alabama", "Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
 
-# final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
+#final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
 
 final_polls = final_polls %>% filter(state %in% states_of_interest) 
 
@@ -92,7 +92,7 @@ final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
 # note that only using grade A or B polls by 538 didn't help (didn't make that much of a diff)
 final_polls = final_polls %>% filter(days_to_election <= 30, internal=="false", partisan=="", population=="lv")#, (grepl("A", fte_grade) | grepl("B", fte_grade)))
 
-saveRDS(final_polls,"cleaned_senate_polls.rds")
+#saveRDS(final_polls,"cleaned_senate_polls.rds")
 ```
 
 
@@ -210,7 +210,7 @@ set.seed(12) # keep this
 #be sure to add your added parameters to parameters.to.save
 jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),n.iter = 10000)
 
-
+saveRDS(jags_sims, "senate_model_output.rds")
 ```
 
 ## Not Required: Dem Win Probability by State
@@ -289,7 +289,7 @@ The probability that Republicans retain control of the Senate is `r round(prob_r
 dem_seats_df = data.frame(dem_seats)  
 colnames(dem_seats_df) = "number_dem_seats"
 dem_seats_df = dem_seats_df %>%
-  mutate(blue = as.factor(ifelse(number_dem_seats > 50, 1, 0)))
+  mutate(blue = as.factor(ifelse(number_dem_seats >= 50, 1, 0)))
 
 minimum = min(dem_seats_df$number_dem_seats)-1
 maximum = max(dem_seats_df$number_dem_seats)+1
@@ -302,21 +302,23 @@ ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) +
   labs(x = "Number of Democrat Seats", y = "Count")
 ```
 
+## more plots (see Lynn EDA)
+
 # Raw Output for Appendix
 
 ```{r}
 options(max.print = 999999999)
 jags_sims$BUGSoutput$summary
-
 ```
 
 # Traceplots
 
 ```{r}
-betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+# CHANGE STATES TO BE SENATE SPECIFIC
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("beta.", i, ".1.")} )
 parameters = c(betas_day_of_election)
 
-tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+tp_vars = data.frame(jags_sims$BUGSoutput$sims.matrix)[,parameters]
 
 tps <- function(var){
   ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +

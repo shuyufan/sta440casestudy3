@@ -92,7 +92,7 @@ econ_pres_polls = econ_pres_polls %>%
 
 ```{r}
 econ_pres_polls = econ_pres_polls %>%
-  filter(days_to_election <= 60)
+  filter(days_to_election <= 30)
 
 states_of_interest = c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
 
@@ -175,7 +175,10 @@ jags_data <- list(y=y,t=t,r=r,
 # Model with multivariate formulation
 
 ```{r mv_model}
-model_mv <- function(){
+#Identify filepath of model file
+model_mv <- tempfile()
+writeLines("
+model{
   for(k in 1:N_polls){
     y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
     p[k] = theta[r[k],t[k]]
@@ -209,6 +212,7 @@ model_mv <- function(){
   sigma2_0 = 1/sigma2_0_inv
   sigma2_0_inv ~ dgamma(.5,.5)
 }
+", con=model_mv)
 ```
 
 ```{r eval=F}
@@ -277,7 +281,11 @@ jags_data$states_corr_mat <- states_cov_matrix
 #be sure to add your added parameters to parameters.to.save
 set.seed(6)  ## seed(15) --> 7.36% win probability
 jags_sims_mv <- jags(data = jags_data,model.file = model_mv, parameters.to.save = c("theta","Sigma","p","sigma2_y"),
-n.iter = 10000)
+  n.chains = 2,
+            n.adapt = 100,
+            n.iter = 10000,
+            n.burnin = 3000,
+            n.thin = 2)
 
 #jags_sims_mv
 ```
@@ -358,4 +366,5 @@ tps <- function(var){
 all_beta_trace = lapply(names(tp_vars), tps)
 do.call(grid.arrange, all_beta_trace)
 ```
+
 
