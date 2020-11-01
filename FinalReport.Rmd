@@ -167,7 +167,7 @@ $\epsilon_i \sim N(0, \phi^2)$  \newline
 
 *where explain variables later the S&P stock growth three months prior to the election*
 *also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
-In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval rating of the incumbent party. When computing the 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). 
+In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. Motivated by Andrew Gelman's method of computing the priors, we predict $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval rating of the incumbent party. When computing the 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). 
 
 *explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
 
@@ -202,7 +202,7 @@ $\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newli
 $\beta_{j1} \sim N(h_j, 7.5)$  \newline
 $h_j = 0.9*\text{Vote Share from Partisan Lean}_j + 0.1*\text{Expected Vote Share from Voter Turnout}_j$  \newline
 
-$\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. 
+$\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. *explain why 
 
 *explain how partisan lean was calculated from 538 and how it was turned into Vote Share from Partisan lean*
 
