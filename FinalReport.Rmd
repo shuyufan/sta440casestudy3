@@ -201,8 +201,7 @@ For our presidential model, we wanted to incorporate state-level correlations th
 
 *where explain variables later the S&P stock growth three months prior to the election*
 *also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
-
-In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval rating of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
+In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval ratings of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
 
 *one sentence on hyperparameters*
 
@@ -243,6 +242,7 @@ $\sigma^2_{\beta j} \sim InvGamma(\nu_{\beta}, \nu_{\beta}\tau_{\beta}))$ \newli
 $\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newline
 $\beta_{j1} \sim N(h_j, 7.5)$  \newline
 $h_j = 0.9*\text{Vote Share from Partisan Lean}_j + 0.1*\text{Expected Vote Share from Voter Turnout}_j$  \newline
+
 
 According to FiveThirtyEight (Rakich, 2018),incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
 
