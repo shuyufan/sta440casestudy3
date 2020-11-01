@@ -77,7 +77,7 @@ non_appointed_incumbents = c("New Hampshire", "Minnesota", "Michigan", "Massachu
 # what the most competitive races are based on 538 and economist metrics, Cook Polit Rep
 states_of_interest = c("Alabama", "Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
 
-# final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
+#final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
 
 final_polls = final_polls %>% filter(state %in% states_of_interest) 
 
@@ -92,7 +92,7 @@ final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
 # note that only using grade A or B polls by 538 didn't help (didn't make that much of a diff)
 final_polls = final_polls %>% filter(days_to_election <= 30, internal=="false", partisan=="", population=="lv")#, (grepl("A", fte_grade) | grepl("B", fte_grade)))
 
-saveRDS(final_polls,"cleaned_senate_polls.rds")
+#saveRDS(final_polls,"cleaned_senate_polls.rds")
 ```
 
 
