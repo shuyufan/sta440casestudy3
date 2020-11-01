@@ -199,6 +199,8 @@ $\epsilon_i \sim N(0, \phi^2)$  \newline
 
 For our presidential model, we wanted to incorporate state-level correlations that differ between each pair of states. For example, Wisconsin is much more similar to its Great Lakes neighbor Michigan both geographically and demographically than it is to Arizona, which is in the Southwest and has a much larger Hispanic population. So, we would expect that Wisconsin and Michigan have a higher correlation in their election results than Wisconsin and Arizona. In order to incorporate this into our presidential model, we used a multivariate normal distribution to model two-party vote share in each state, which allowed us to specify a covariance matrix for the states. We used a covariance matrix which was downloaded from the Economist forecast model (Gelman, 2020). These similarities between states were calculated by comparing their demographic and political profiles, such as the state's share of white voters and how urban/rural the state is.
 
+*where explain variables later the S&P stock growth three months prior to the election*
+*also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
 In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval ratings of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
 
 *one sentence on hyperparameters*
@@ -600,7 +602,7 @@ To account for shock events,
 
 ## Discussion and Limitations
 
-As polls are an important part of our data sources, we acknowledge that with the COVID-19 pandemic, polling has moved from in-person interviews to phone calls, live surveys and internet questions, which could lead to unknown biases with its lower response rates(Gelman, 2020). A recent election prediction study shows that state polls have much higher margins of error than expected (Shirani-Mehr et al., 2018). 
+As polls are an important part of our data sources, we acknowledge that with the COVID-19 pandemic, polling has moved from in-person interviews to phone calls, live surveys and internet questions, which could lead to unknown biases with its lower response rates(Gelman, 2020). A recent election prediction study shows that state polls have much higher margins of error than expected (Shirani-Mehr et al., 2018). In addition, COVID-19 posted significant uncertainty to election outcomes. For example, rejected absentee ballots due to mailing issues were not as significant in previous elections. But in 2020, so much more voters are mailing their votes, and an unknown number of them will be rejected, potentially changing voter turnout (Rakich, 2020). We are also not using a potentially very informative data set, which is the early voting data for 2020 elections, available on websites such as [https://electproject.github.io/Early-Vote-2020G/index.html]. We excluded them because abundant literature has proven early voting data to have strong partisan bias, but because of the high early voting turnout this year, it might be helpful to train our models (McDonald, 2020) with early voting updates. Another factor that could significantly affect election results is potential shock events - terrorist attacks, natural disasters, power outages, just to name a few. Although literature proves that sometimes elections could be vulnerable to those events, because our predictions are so close to the actual day of election, we did not account for specific shock events in our analysis (Morley, 1905). However, we **insert sensitivity analysis** to account for unpredictable events.
 
 # Appendix A
 
@@ -734,7 +736,7 @@ $$
 
 Where $\pi_i$ is the probability that subgroup $i$ votes. $Vote_i$ is the number of people in the $i$th subgroup that voted in the 2016 election. The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
-We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district.
+We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district. 
 
 ### Raw Output for Appendix
 
@@ -904,6 +906,9 @@ Retrieved October 31, 2020 from https://fivethirtyeight.com/features/registered-
 39. The Economist. (2016). Hillary Clinton has got this. Probably. Very probably https://www.economist.com/graphic-detail/2016/11/08/hillary-clinton-has-got-this-probably-very-probably
 \newline
 40. Shirani-Mehr, H., Rothschild, D., Goel, S., &amp; Gelman, A. (2018). Disentangling Bias and Variance in Election Polls. Journal of the American Statistical Association, 113(522), 607-614. doi:10.1080/01621459.2018.1448823
+\newline
+41. McDonald, M. (2020). 2020 General Election Early Vote Statistics. Retrieved November 01, 2020, from https://electproject.github.io/Early-Vote-2020G/index.html
+42. Morley, M. (1905). Election Emergencies: Voting in the Wake of Natural Disasters and Terrorist Attacks, 67 Emory L. J. 545. Available at: https://scholarlycommons.law.emory.edu/elj/vol67/iss3/6
 
 ## Additional EDA
 ```{r Additional EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Presidential Election Data Visualization"}
