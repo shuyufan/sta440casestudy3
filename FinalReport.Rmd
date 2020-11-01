@@ -280,6 +280,40 @@ p_trump_win = 1 - mean(ec_votes_dem >= 270)
 p_trump_win
 ```
 
+```{r pres-plot, echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{trumpwintime} Probability of Re-election for President Trump over the 30 Days Before Election Day"}
+trump_pwin_time = NULL
+for (j in 1:N_states) {
+  new_col = NULL
+for (t in 1:N_days) {
+  new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
+}
+  trump_pwin_time = cbind(trump_pwin_time, new_col)
+}
+colnames(trump_pwin_time) <- states
+
+trump_pwin_time  = as.data.frame(trump_pwin_time)%>%
+  gather(., "state", "exp_pwin") %>%
+  mutate(days_bf_election = rep(seq(1, N_days), N_states))
+
+ggplot(trump_pwin_time, aes(x = days_bf_election-1, y = exp_pwin, color = state)) +
+  geom_line() + geom_hline(yintercept = 0.5) + geom_vline(xintercept = 12, color = "blue") +
+  scale_x_reverse() + 
+  labs(x = "Days Before Election", y = "Trump's Probability of Winning")  +
+  geom_dl(aes(label=state), method=list("last.points", cex = 0.6)) +
+  theme(legend.position = "none")
+```
+
+```{r echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{trumpusmap} Plot of Predicted Presidential Result for States of Interest on Election Day}
+pres_state_df = data.frame(state = states, pwin = (elec_sims>50) %>% colMeans())
+plot_usmap(data = pres_state_df, values = "pwin", color = "black") + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0.5,
+                       aesthetics = "fill", name = "Predicted Probability of Voting Biden", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+
+\ref{trumpwintime} shows how Trump's probability of winning the election changes over the 60 days before the election in each state of interest. It appears that his probability of winning increased after the last presidential debate. *check for final results* From \ref{trumpusmap} we see that swing states such as Florida and Ohio are predicted to vote Trump while other swing states such as Pennsylvania and North Carolina are predicted to vote Biden. *check for final results* 
+
+
 ```{r pres-res-table, echo = F}
 pres_res = matrix(c(round(p_trump_win,2), 
                     round(1-p_trump_win,2),
@@ -297,38 +331,6 @@ kable(t(pres_res), caption = "Predicted Probability of Winning and Electoral Vot
 ```
 
 The probability that Trump wins re-election is `r round(p_trump_win,2)`. The predicted electoral colleges votes for Trump is `r round(538-mean(ec_votes_dem),0)` with a 95% confidence interval of (`r round(538-quantile(ec_votes_dem,0.975))`, `r round(538-quantile(ec_votes_dem,0.025))`).
-
-```{r pres-plot, echo = F}
-trump_pwin_time = NULL
-for (j in 1:N_states) {
-  new_col = NULL
-for (t in 1:N_days) {
-  new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
-}
-  trump_pwin_time = cbind(trump_pwin_time, new_col)
-}
-colnames(trump_pwin_time) <- states
-
-trump_pwin_time  = as.data.frame(trump_pwin_time)%>%
-  gather(., "state", "exp_pwin") %>%
-  mutate(days_bf_election = rep(seq(1, N_days), N_states))
-
-ggplot(trump_pwin_time, aes(x = days_bf_election-1, y = exp_pwin, color = state)) +
-  geom_line() + geom_hline(yintercept = 0.5) + scale_x_reverse() + 
-  labs(x = "Days Before Election", y = "Trump's Probability of Winning")  +
-  geom_dl(aes(label=state), method=list("last.points", cex = 0.6)) +
-  theme(legend.position = "none")
-```
-
-*insert Figure label* shows how Trump's probability of winning the election changes over the 60 days before the election in each state of interest.
-
-```{r}
-pres_state_df = data.frame(state = states, pwin = (elec_sims>50) %>% colMeans())
-plot_usmap(data = pres_state_df, values = "pwin", color = "black") + 
-  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0.5,
-                       aesthetics = "fill", name = "Predicted Probability of Win for Biden", label = scales::comma) + 
-  theme(legend.position = "right")
-```
 
 ### Senate Election Model
 
@@ -379,8 +381,34 @@ prob_rep_control
 
 # rep_noelection = 30
 # rep_safe = length(safe_rep)
-
 ```
+
+```{r echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{senateusmap} Plot of Predicted Senate Results for States of Interest on Election Day}
+senate_state_df$pwin = preds
+plot_usmap(data = senate_state_df, values = "pwin", color = "black") + 
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 50,
+                       aesthetics = "fill", name = "Predicted Probability of Win for Democrats", label = scales::comma) + 
+  theme(legend.position = "right")
+```
+
+
+```{r echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{senatehist} Plot of Predicted Senate Results for States of Interest on Election Day}
+dem_seats_df = data.frame(dem_seats)  
+colnames(dem_seats_df) = "number_dem_seats"
+dem_seats_df = dem_seats_df %>%
+  mutate(blue = as.factor(ifelse(number_dem_seats >= 50, "Dem", "Rep")))
+
+minimum = min(dem_seats_df$number_dem_seats)-1
+maximum = max(dem_seats_df$number_dem_seats)+1
+
+ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) + 
+  geom_histogram(binwidth = 0.5) +
+  scale_x_discrete(limits=(minimum+1):(maximum-0.5)) +
+  scale_fill_manual(values=c("#0015BC","#FF0000")) + 
+  labs(x = "Number of Democrat Seats", y = "Count", fill = "Party")
+```
+
+From \ref{senateusmap} we see that for the Senate race, states such as Texas are predicted to lean heavily towards the Republican candidate and Democrats have a great than 50% chance of winning states such as Arizona and Michigan. From the histogram in \ref{senatehist} we see the distribution of the predicted number of Democrat seats point to a Democrat majority in the Senate, which is in agreement with the low probability that Republicans retain control of the Senate (`r round(prob_rep_control,2)`). 
 
 ```{r tillis-cunningham-table, echo = F}
 elec_sims_df = data.frame(elec_sims)
@@ -392,8 +420,8 @@ tillis_vote_share = 100 - cunningham_vote_share
 cunningham_ci = quantile(elec_sims_df$North.Carolina, c(0.025, 0.975))
 tillis_ci = c(100 - as.numeric(cunningham_ci[2]), 100-as.numeric(cunningham_ci[1]))
 
-tillis_vote_share
-tillis_ci
+# tillis_vote_share
+# tillis_ci
 
 nc_senate_race = matrix(round(c(tillis_vote_share, tillis_ci,
                                 cunningham_vote_share, cunningham_ci),2), 
@@ -403,32 +431,7 @@ rownames(nc_senate_race) = c("Tillis", "Cunningham")
 kable(nc_senate_race, caption = "Predicted Vote Share for Tillis-Cunningham Race")
 ```
 
-The probability that Republicans retain control of the Senate is `r round(prob_rep_control,2)`. For the NC Senate race (Tillis vs. Cunningham), the predicted vote share for Cunningham is `r round(cunningham_vote_share,2)`% with a 95% confidence interval of (`r round(cunningham_ci[1],2)`, `r round(cunningham_ci[2],2)`).
-
-```{r echo=F}
-dem_seats_df = data.frame(dem_seats)  
-colnames(dem_seats_df) = "number_dem_seats"
-dem_seats_df = dem_seats_df %>%
-  mutate(blue = as.factor(ifelse(number_dem_seats >= 50, 1, 0)))
-
-minimum = min(dem_seats_df$number_dem_seats)-1
-maximum = max(dem_seats_df$number_dem_seats)+1
-
-ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) + 
-  geom_histogram(binwidth = 0.5) +
-  scale_x_discrete(limits=minimum:maximum) +
-  scale_fill_manual(values=c("#FF0000","#0015BC")) + 
-  theme(legend.position = "none") +
-  labs(x = "Number of Democrat Seats", y = "Count")
-```
-
-```{r}
-senate_state_df$pwin = preds
-plot_usmap(data = senate_state_df, values = "pwin", color = "black") + 
-  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 50,
-                       aesthetics = "fill", name = "Predicted Probability of Win for Democrats", label = scales::comma) + 
-  theme(legend.position = "right")
-```
+For the NC Senate race (Tillis vs. Cunningham), the predicted vote share for Cunningham is `r round(cunningham_vote_share,2)`% with a 95% confidence interval of (`r round(cunningham_ci[1],2)`, `r round(cunningham_ci[2],2)`).
 
 ## House Election Model
 
@@ -442,7 +445,6 @@ districts <- paste("District",c(1:13))
 elec_sims <- jags_sims_house$BUGSoutput$sims.list$beta[,,1]
 colnames(elec_sims) <- districts
 #(elec_sims>50) %>% colMeans() #P(Biden Win) each state
-
 ```
 
 ```{r, include = F}
@@ -480,31 +482,17 @@ rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
 kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
 ```
 
-From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50).
-
 ```{r, eval = F}
 download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
-# Unzip this file. You can do it with R (as below), or clicking on the object you downloaded.
 system("unzip nc_map.zip")
+```
 
+```{r, echo = F, fig.height = 8, fig.width = 4, fig.cap = "\\label{housemap} Plot of Predicted Senate Results for States of Interest on Election Day}
 nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
-
-nc_cong_dist@data <- nc_cong_dist@data %>% 
-  mutate(rep_vote_shares = rep_vote_shares) %>%
-  mutate(binned_rep_vs = case_when(
-    rep_vote_shares >= 0 ~ 1,
-    rep_vote_shares >= 25 ~ 2,
-    rep_vote_shares >= 50 ~ 3,
-    rep_vote_shares >= 75 ~ 4,
-    TRUE ~ rep_vote_shares
-  ))
-
   
 # 'fortify' the data to get a dataframe format required by ggplot2
 nc_cong_dist_df <- broom::tidy(nc_cong_dist, region = "DISTRICT")
-
 rep_vote_shares_df = data.frame(dist = seq(1:13), vote_share = rep_vote_shares)
-
 nc_cong_dist_vs_df = merge(nc_cong_dist_df,rep_vote_shares_df, all.x = TRUE, by.x = "id", by.y = "dist" ) %>%
   mutate(binned_rep_vs = case_when(
     vote_share >= 75 ~ 4,
@@ -520,17 +508,6 @@ nc_cong_dist_vs_df = merge(nc_cong_dist_df,rep_vote_shares_df, all.x = TRUE, by.
     binned_rep_vs == 4 ~ "#FF0000",
     TRUE ~ ""
   ))
-
-ggplot()+
-  geom_polygon( data=mapbase,
-                aes(long, lat, group = region, fill = region),
-                alpha = 0.3) + 
-  coord_fixed() + theme_void() + 
-  geom_text(data=cnames,
-            aes(x, y , label = abb),
-            color= "black", size=3, fontface = 2,
-            hjust = 0.5, vjust = 0.5) + #central alignment
-  scale_fill_discrete(guide = F)
 
 # use midpoint of county to find where labels should go
 rnames <- aggregate(cbind(long, lat) ~ id, data=nc_cong_dist_vs_df, 
@@ -553,26 +530,16 @@ rnames$lat[which(rnames$id==3)] = rnames$lat[which(rnames$id==3)]-20500
 
 ggplot() +
   geom_polygon(data = nc_cong_dist_vs_df, 
-               aes(x = long, y = lat, group = group),
-               fill=nc_cong_dist_vs_df$dist_color#,"#0015BC", "#B0CEFF")
-               , color="white") +
-      geom_text(data=rnames, aes(long, lat, label = id), size=3) +
-
-    # geom_text(data=nc_cong_dist_vs_df,
-    #         aes(x = long, y = lat, group = group, label = dist_id),
-    #         color= "black", size=3, fontface = 2,
-    #         hjust = 0.5, vjust = 0.5) +
-
-  theme_void()
-  #central alignment
-
-
-nc_cong_dist_df <- broom::tidy(nc_cong_dist, binned_rep_vs = "binned_rep_vs")
-head(nc_cong_dist_df)
-
-map <- ggplot() + geom_polygon(data = nc_cong_dist, aes(x = long, y = lat, group = group, fill = nc_cong_dist$data$rep_vote_share)) + theme_void()
-map 
+               aes(x = long, y = lat, group = group, fill = vote_share),
+               #fill=nc_cong_dist_vs_df$dist_color#,"#0015BC", "#B0CEFF"),
+               color="white") +
+    scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 50,
+                       aesthetics = "fill", name = "Republican Vote Share", label = scales::comma) + 
+      geom_text(data=rnames, aes(long, lat, label = id), size=3) + theme_void()
 ```
+
+From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From \ref{housemap} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
+
 
 ## Model Validation and Sensitivity Analysis
 
