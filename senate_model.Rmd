@@ -28,7 +28,9 @@ senate_polls$state = as.factor(states_fixed)
 
 
 # Dealing with Georgia Special Election
-
+# georgia has two senate races--the regular one
+# special election ("Georgia Special") has many republican and democrats running at the same time and then the top two people in that election will have a one-on-one election in January
+# summed up the support for republicans and democrats and treated it normally
 test = senate_polls[which(senate_polls$race_id == "7780"),]
  
 test2 = test %>% group_by(question_id, candidate_party) %>% summarise(pct = sum(pct)) %>% filter(candidate_party %in% c("DEM", "REP"))
@@ -65,15 +67,17 @@ final_polls$days_to_election = as.numeric(as.Date("11/3/2020", "%m/%d/%y")-as.Da
 
 dem_seats_up = c("New Hampshire", "Minnesota", "Michigan", "Massachusetts", "Illinois", "Delaware", "Alabama", "New Jersey", "New Mexico", "Oregon", "Rhode Island", "Virginia")
 
+# ppl who technically didn't win an election
 non_appointed_incumbents = c("New Hampshire", "Minnesota", "Michigan", "Massachusetts", "Illinois", "Delaware", "Alabama", "New Jersey", "Oregon", "Rhode Island", "Virginia", "West Virginia", "Texas", "Louisiana", "Maine", "Mississippi", "Montana", "Nebraska", "North Carolina", "Oklahoma", "South Carolina", "South Dakota", "Kentucky", "Iowa", "Idaho", "Georgia", "Colorado", "Arkansas", "Alaska")
 
 # safe_dem = c("Massachusetts", "Rhode Island", "Delaware", "New Hampshire", "New Jersey", "Oregon", "Illinois", "Virginia", "New Mexico")
 # 
 # safe_rep = c("Arkansas", "Wyoming", "Nebraska", "South Dakota", "West Virginia", "Idaho", "Oklahoma", "Tennessee", "Louisiana", "Kentucky", "Mississippi")
 
+# what the most competitive races are based on 538 and economist metrics, Cook Polit Rep
 states_of_interest = c("Alabama", "Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
 
-# final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
+#final_polls = final_polls %>% filter(!(state %in% safe_dem))  %>% filter(!(state %in% safe_rep)) # %>% filter(!(state == "Georgia-Special"))
 
 final_polls = final_polls %>% filter(state %in% states_of_interest) 
 
@@ -85,14 +89,25 @@ final_polls = final_polls %>% mutate(y = votes_DEM/(votes_DEM + votes_REP)*100)
 
 ```{r}
 # Customize polls used
-
+# note that only using grade A or B polls by 538 didn't help (didn't make that much of a diff)
 final_polls = final_polls %>% filter(days_to_election <= 30, internal=="false", partisan=="", population=="lv")#, (grepl("A", fte_grade) | grepl("B", fte_grade)))
 
-saveRDS(final_polls,"cleaned_senate_polls.rds")
+#saveRDS(final_polls,"cleaned_senate_polls.rds")
 ```
+
 
 ```{r}
 states <- sort( c(as.character(unique(final_polls$state))) )
+
+nc_dex = which(states=="North Carolina")
+  
+load("vote_share_df.Rdata")
+nc_democ_vote_share = 100*sum(vote_share_df$Dem_vote)/(sum(vote_share_df$Dem_vote)+sum(vote_share_df$Rep_vote))
+
+
+```
+
+```{r}
 
 y <- final_polls$y
 r <- match(final_polls$state,states)
@@ -104,6 +119,7 @@ N_days <- t %>% max
 
 leans_df = read.csv("partisan_leans_538.csv")
 
+# 2.6 is from 538
 leans = c()
 for (st in states) {
   st_lean = 0
@@ -126,6 +142,8 @@ lean_to_prior = function(lean) {
 }
 
 priors = lean_to_prior(leans)
+
+priors[nc_dex] = 0.9*priors[nc_dex] + 0.1*nc_democ_vote_share
 
 jags_data <- list(y=y,t=t,r=r,
                   N_polls=N_polls,N_states=N_states,N_days=N_days,
@@ -188,22 +206,11 @@ model <- function(){
 ```
 
 ```{r run_model,eval=TRUE,cache=TRUE}
-
+set.seed(12) # keep this
 #be sure to add your added parameters to parameters.to.save
-jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),
-                  n.iter = 10000)
+jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),n.iter = 10000)
 
-
-```
-
-```{r eval=FALSE}
-jags_sims$BUGSoutput
-
-BidenWins <- jags_sims$BUGSoutput$sims.list$BidenWins[,,1]
-
-hist(BidenWins)
-
-print(c(quantile(BidenWins, 0.2), quantile(BidenWins, 0.8)))
+saveRDS(jags_sims, "senate_model_output.rds")
 ```
 
 ## Not Required: Dem Win Probability by State
@@ -253,11 +260,6 @@ prob_rep_control
 
 ```
 
-```{r eval=F}
-hist(dem_seats)
-```
-
-
 ## Point, Interval Estimates for Tillis (Rep) in NC Senate
 
 ```{r}
@@ -273,15 +275,50 @@ tillis_ci = c(100 - as.numeric(cunningham_ci[2]), 100-as.numeric(cunningham_ci[1
 tillis_vote_share
 tillis_ci
 
+nc_senate_race = matrix(round(c(tillis_vote_share, tillis_ci,
+                                cunningham_vote_share, cunningham_ci),2), 
+                        nrow = 2, byrow = TRUE)
+colnames(nc_senate_race) = c("Estimate", "2.5% Quantile", "97.5% Quantile")
+rownames(nc_senate_race) = c("Tillis", "Cunningham")
+kable(nc_senate_race, caption = "Predicted Vote Share for Tillis-Cunningham Race")
+```
+
+The probability that Republicans retain control of the Senate is `r round(prob_rep_control,2)`. For the NC Senate race (Tillis vs. Cunningham), the predicted vote share for Cunningham is `r round(cunningham_vote_share,2)`% with a 95% confidence interval of (`r round(cunningham_ci[1],2)`, `r round(cunningham_ci[2],2)`).
+
+```{r eval=F}
+dem_seats_df = data.frame(dem_seats)  
+colnames(dem_seats_df) = "number_dem_seats"
+dem_seats_df = dem_seats_df %>%
+  mutate(blue = as.factor(ifelse(number_dem_seats >= 50, 1, 0)))
+
+minimum = min(dem_seats_df$number_dem_seats)-1
+maximum = max(dem_seats_df$number_dem_seats)+1
+
+ggplot(dem_seats_df, aes(x = number_dem_seats, fill = blue)) + 
+  geom_histogram(binwidth = 0.5) +
+  scale_x_discrete(limits=minimum:maximum) +
+  scale_fill_manual(values=c("#FF0000","#0015BC")) + 
+  theme(legend.position = "none") +
+  labs(x = "Number of Democrat Seats", y = "Count")
+```
+
+## more plots (see Lynn EDA)
+
+# Raw Output for Appendix
+
+```{r}
+options(max.print = 999999999)
+jags_sims$BUGSoutput$summary
 ```
 
 # Traceplots
 
 ```{r}
-betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+# CHANGE STATES TO BE SENATE SPECIFIC
+betas_day_of_election = sapply(1:N_states, function(i) {paste0("beta.", i, ".1.")} )
 parameters = c(betas_day_of_election)
 
-tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+tp_vars = data.frame(jags_sims$BUGSoutput$sims.matrix)[,parameters]
 
 tps <- function(var){
   ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +

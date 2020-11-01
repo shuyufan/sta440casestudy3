@@ -182,6 +182,7 @@ voter_regis_2020_grouped %>%
 saveRDS(voter_regis_2020_grouped, "2020_regis_voters_grouped.rds")
 ```
 
+We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district.
 
 ```{r fundamental-part-of-the-prior eval=F}
 # FOR NOW LETS SPLIT THEM EVENLY
@@ -272,6 +273,10 @@ save(vote_share_df, file="vote_share_df.Rdata")
 # and then we can 0.5*fundamental + 0.5*partisan lean = priors (12x1)
 ```
 
+
+
+
+
 # Finish prior and run model
 
 ```{r}
@@ -351,17 +356,17 @@ model <- function(){
 ```
 
 ```{r run_model,eval=TRUE,cache=TRUE}
-
+set.seed(123) # REMEMEBR TO CHANGE 
 #be sure to add your added parameters to parameters.to.save
-jags_sims <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),
+jags_sims_house <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),
                   n.iter = 10000)
 
-
+saveRDS(jags_sims_house, "house_model_output.rds")
 ```
 
 
 ```{r}
-elec_sims <- jags_sims$BUGSoutput$sims.list$beta[,,1]
+elec_sims <- jags_sims_house$BUGSoutput$sims.list$beta[,,1]
 colnames(elec_sims) <- districts
 #(elec_sims>50) %>% colMeans() #P(Biden Win) each state
 
@@ -386,6 +391,7 @@ dem_intervals[1,12] = 99.8
 dem_intervals[2,12] = 100
 
 rep_intervals = 100 - dem_intervals
+
 for (i in 1:length(districts)) {
   print(districts[i])
   print(rep_intervals[2,i])
@@ -394,13 +400,56 @@ for (i in 1:length(districts)) {
 }
 ```
 
+```{r}
+# ROUND
+house_res = matrix(rbind(rep_vote_shares, rep_intervals), nrow = 13, byrow = TRUE)
+house_res = house_res[, c(1,3,2)]
+house_res[12,3] = 0
+colnames(house_res) = c("Estimate", "2.5% Quantile", "97.5% Quantile")
+rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
+                        "District 5", "District 6", "District 7", "District 8",
+                        "District 9", "District 10", "District 11", "District 12", "District 13")
+kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
+```
+
+```{r, eval = F}
+nc_cong_dist <- rgdal::readOGR("HB 1029, 3rd Edition - Shapefile/C-Goodwin-A-1-TC.shp")
+
+nc_cong_dist@data <- nc_cong_dist@data %>% 
+  mutate(rep_vote_shares = rep_vote_shares) %>%
+  mutate(binned_rep_vs = case_when(
+    rep_vote_shares >= 0 ~ 1,
+    rep_vote_shares >= 25 ~ 2,
+    rep_vote_shares >= 50 ~ 3,
+    rep_vote_shares >= 75 ~ 4,
+    TRUE ~ rep_vote_shares
+  ))
+  
+nc_cong_dist_df <- broom::tidy(nc_cong_dist, binned_rep_vs = "binned_rep_vs")
+head(nc_cong_dist_df)
+
+map <- ggplot() + geom_polygon(data = nc_cong_dist, aes(x = long, y = lat, group = group, fill = nc_cong_dist$data$rep_vote_share)) + theme_void()
+map 
+```
+
+
+
+# Raw Output for Appendix
+
+```{r}
+options(max.print = 999999999)
+jags_sims_house$BUGSoutput$summary
+
+```
+
 # Traceplots
 
 ```{r}
+# CHANGE TO BE HOUSE SPECIFIC, IT WOULD BE DISTRCITS
 betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
 parameters = c(betas_day_of_election)
 
-tp_vars = data.frame(jags_sims_mv$BUGSoutput$sims.matrix)[,parameters]
+tp_vars = data.frame(jags_sims_house$BUGSoutput$sims.matrix)[,parameters]
 
 tps <- function(var){
   ggplot(tp_vars, aes_(y=as.name(var), x=seq(1,nrow(tp_vars)))) +

@@ -62,7 +62,7 @@ abramowitz_additional <- abramowitz %>%
          q3_real_income_growth = q3_real_income$real_income_perc_change)
 
 write.csv(abramowitz_additional, "abramowitz_additional.csv")
-# 10/28/2020 - 09/01/2020 stock growth = 3271.03/3365.52 -1 = -0.0280759 ### need to update on Nov 1 ###
+# 10/30/2020 - 09/01/2020 stock growth = 3269.96/3365.52 -1 = -0.02839383 
 # 2020 q2 real income growth (compared to 2019 q2) = 11.8
 # 2020 q2 real income growth (compared to 2019 q2) = 6.4 (not in data set)
 ```
