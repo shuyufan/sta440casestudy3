@@ -199,10 +199,7 @@ $\epsilon_i \sim N(0, \phi^2)$  \newline
 
 For our presidential model, we wanted to incorporate state-level correlations that differ between each pair of states. For example, Wisconsin is much more similar to its Great Lakes neighbor Michigan both geographically and demographically than it is to Arizona, which is in the Southwest and has a much larger Hispanic population. So, we would expect that Wisconsin and Michigan have a higher correlation in their election results than Wisconsin and Arizona. In order to incorporate this into our presidential model, we used a multivariate normal distribution to model two-party vote share in each state, which allowed us to specify a covariance matrix for the states. We used a covariance matrix which was downloaded from the Economist forecast model (Gelman, 2020). These similarities between states were calculated by comparing their demographic and political profiles, such as the state's share of white voters and how urban/rural the state is.
 
-*where explain variables later the S&P stock growth three months prior to the election*
-*also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
-
-In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval rating of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
+In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval ratings of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
 
 *one sentence on hyperparameters*
 
@@ -247,7 +244,12 @@ $\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newli
 $\beta_{j1} \sim N(h_j, 7.5)$  \newline
 $h_j = 0.9*\text{Vote Share from Partisan Lean}_j + 0.1*\text{Expected Vote Share from Voter Turnout}_j$  \newline
 
+<<<<<<< HEAD
 According to FiveThirtyEight (Rakich, 2018), incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
+=======
+
+According to FiveThirtyEight (Rakich, 2018),incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
+>>>>>>> 4836bad5f627811e600a7cd1d70a6a62080d16b1
 
 $\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. 
 
