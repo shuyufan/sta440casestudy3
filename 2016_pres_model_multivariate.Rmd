@@ -94,7 +94,7 @@ econ_pres_polls = econ_pres_polls %>%
 econ_pres_polls = econ_pres_polls %>%
   filter(days_to_election <= 60)
 
-states_of_interest = c("VA", "MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
+states_of_interest = c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
 
 econ_pres_polls= econ_pres_polls %>% filter(state %in% states_of_interest)
 #saveRDS(econ_pres_polls, "cleaned_econ_polls.rds")
@@ -130,7 +130,8 @@ lean_to_prior = function(lean) {
 # prior_model <- lm(incvote ~  juneapp + q2gdp, data = abramowitz)
 
 # read in abramowitz_additional data
-abramowitz <- read.csv('abramowitz_additional.csv') 
+abramowitz <- read.csv('abramowitz_additional.csv')
+abramowitz = abramowitz %>% filter(year != 2016)
 prior_model <- lm(incvote ~  juneapp + three_month_stock_growth + q2_real_income_growth, data = abramowitz)
 
 # make predictions (for 2020, g2gdp = -9.1, juneapp = -10)
@@ -141,7 +142,7 @@ prior_model <- lm(incvote ~  juneapp + three_month_stock_growth + q2_real_income
 
 # with juneapp + three_month_stock_growth + q2_real_income_growth as predictors
 ### need to update on stock data on Nov 1 ###
-national_mu_prior <- 100 - predict(prior_model,newdata = tibble(juneapp = -10, three_month_stock_growth = -0.0280759, q2_real_income_growth = 11.8))
+national_mu_prior <- predict(prior_model,newdata = tibble(juneapp = 4, three_month_stock_growth = 0.003383248, q2_real_income_growth = 1.8))
 
 # on correct scale
 # national_mu_prior <- national_mu_prior / 100
@@ -274,7 +275,7 @@ jags_data$states_corr_mat <- states_cov_matrix
 #eigen(test_matrix)
 
 #be sure to add your added parameters to parameters.to.save
-set.seed(15)  ## seed(15) --> 7.3% win probability
+set.seed(6)  ## seed(15) --> 7.36% win probability
 jags_sims_mv <- jags(data = jags_data,model.file = model_mv, parameters.to.save = c("theta","Sigma","p","sigma2_y"),
 n.iter = 10000)
 

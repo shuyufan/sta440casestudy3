@@ -182,6 +182,7 @@ voter_regis_2020_grouped %>%
 saveRDS(voter_regis_2020_grouped, "2020_regis_voters_grouped.rds")
 ```
 
+We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district.
 
 ```{r fundamental-part-of-the-prior eval=F}
 # FOR NOW LETS SPLIT THEM EVENLY
@@ -271,6 +272,10 @@ save(vote_share_df, file="vote_share_df.Rdata")
 # then we will have vote share for each district aka fundamental
 # and then we can 0.5*fundamental + 0.5*partisan lean = priors (12x1)
 ```
+
+
+
+
 
 # Finish prior and run model
 
