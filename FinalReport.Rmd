@@ -244,12 +244,7 @@ $\nu_{\beta} \sim Uniform(0,100)$ and $\tau_{\beta} \sim Uniform(0,100)$. \newli
 $\beta_{j1} \sim N(h_j, 7.5)$  \newline
 $h_j = 0.9*\text{Vote Share from Partisan Lean}_j + 0.1*\text{Expected Vote Share from Voter Turnout}_j$  \newline
 
-<<<<<<< HEAD
-According to FiveThirtyEight (Rakich, 2018), incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
-=======
-
 According to FiveThirtyEight (Rakich, 2018),incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
->>>>>>> 4836bad5f627811e600a7cd1d70a6a62080d16b1
 
 $\text{Expected Vote Share from Voter Turnout}_j$ was calculated from the model in the Interim Report *insert citation whatever that ends up being and also say something like our method for splitting undecided voters is in appendix A.3*. Please see Appendix A.3 for more details. 
 
@@ -511,12 +506,10 @@ rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
 kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
 ```
 
-```{r, eval = F, include = F, message = F, warning = F}
+```{r, echo = F, fig.height = 4, fig.width = 8,  message = F, warning = F, fig.cap = "\\label{housemap} Plot of Predicted Senate Results for States of Interest on Election Day"}
 download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
 system("unzip nc_map.zip")
-```
 
-```{r, echo = F, fig.height = 4, fig.width = 8, fig.cap = "\\label{housemap} Plot of Predicted Senate Results for States of Interest on Election Day"}
 nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
   
 # 'fortify' the data to get a dataframe format required by ggplot2
