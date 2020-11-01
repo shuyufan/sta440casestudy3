@@ -155,6 +155,7 @@ $Y_k \sim N(\theta_{jt},\sigma^2_{yj})$ \newline
 Priors for $\theta_{jt}$: 
 $\theta_{\cdots t} \sim MVN(\theta_{\cdots t-1},\Sigma)$ \newline
 $\Sigma \sim Wishart(S, J+1)$ where $S$ is the state covariance matrix (obtained from Andrew Gelman's model) and $J$ is the number of states in the model. \newline
+Priors for $\sigma^2_{yj}$: 
 $\sigma^2_{yj} \sim InvGamma(\nu_u, \nu_y\tau_y)$ \newline
 $\nu_y \sim Uniform(0,100)$ and $\tau_y \sim Uniform(0,100)$. \newline
 $\theta_{j1} \sim N(\mu_{j}, \sigma^2)$  \newline
