@@ -7,45 +7,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Methods
-
-(WHY HIERARCHICAL)
-
-Similarly to prior work (Linzer 2013), we use a hierarchical model structure for our election models to overcome the limitation that not every state is polled on every day, allowing the model to borrow data across states (or Congressional districts). This also helps account for the fact that polls from each individual state are correlated data observations.
-
-(COVARIANCE MATRIX)
-
-For our presidential model, we wanted to incorporate state-level correlations that differ between each pair of states. For example, Wisconsin is much more similar to its Great Lakes neighbor Michigan both geographically and demographically than it is to Arizona, which is in the Southwest and has a much larger Hispanic population. So, we would expect that Wisconsin and Michigan have a higher correlation in their election results than Wisconsin and Arizona. In order to incorporate this into our presidential model, we used a multivariate normal distribution to model two-party vote share in each state, which allowed us to specify a covariance matrix for the states. We used a covariance matrix which was downloaded from the Economist forecast model (Gelman, 2020). These similarities between states were calculated by comparing their demographic and political profiles, such as the state's share of white voters and how urban/rural the state is.
-
-(CHOOSING STATES & GA SPECIAL ELECTION)
-
-For both the President and Senate models, we had to choose which states we considered to be "battlegrounds" to include in the models. We chose states for the models separately, since some states have a competitive race for President but not for Senate or vice versa. 
-For the presidential model, the states chosen are Arizona, Florida, Georgia, Iowa, Michigan, Minnesota, Nevada, New Hampshire, North Carolina, Ohio, Pennsylvania, Texas, and Wisconsin. These thirteen states are rated as either "Toss Up", "Lean Republican", or "Lean Democrat" races (the three most competitive categories) by the Cook Political Report (CITE), an nonpartisan elections newsletter, as of October 28. These states are also projected to be competitive in the Presidential race by both the FiveThirtyEight and Economist models.
-
-For the Senate model, the states chosen are Alabama, Alaska, Arizona, Colorado, Georgia, Iowa, Kansas, Maine, Michigan, Montana, North Carolina, South Carolina, and Texas. There is also a special election for the Senate in Georgia in addition to the regularly scheduled election. These fourteen races are rated as either "Toss Up", "Lean Republican", or "Lean Democrat" (the three most competitive categories) by the Cook Political Report (CITE) as of October 29. These states are also projected to have competitive Senate races by both the FiveThirtyEight and Economist models. Note that the Georgia special election actually has multiple Republicans and Democrats running on the same ballot. If no candidate wins over 50% of the vote, which is considered likely, the top two finishers will advance to a one-on-one runoff election in January (Ballotpedia, 2020). For simplicity, our model simply sums up the support for Republican candidates and compares that to the sum of the support for Democratic candidates, then treats this election like the others. (This is not the ideal way to simulate this election, but the difficulty of predicting turnout and the political environment for the January runoff election made this decision seem like the best one to make.)
-
-(COMPUTING DESIRED QUANTITIES)
-
-Presidential elections in the United States are decided by the Electoral College, so estimating percentage support in each state alone does not tell us who wins the election. For each set of MCMC samples of two-party vote share by state, we subsequently use the predicted winner in each state to add up the electoral votes of each candidate. For states not in the model, their electoral votes are allocated assuming they vote the same way as in 2016. The probability of President Trump winning re-election is then the probability that he receives 270 or more electoral votes across simulations. Note that although Maine and Nebraska allocate some electoral votes by Congressional District, only two electoral votes are competitive due to this wrinkle, so for simplicity we simply allocate all electoral votes to the statewide winner of each respective state.
-
-For predicting control of the U.S. Senate, things are complicated slightly by the fact that a 50/50 split of Senate seats is a possible outcome of the elections. In this case, the Vice President breaks the tie, so the party that wins the Presidential election will only need 50 Senate seats for a Senate majority, while the party that loses will need 51. Since our President model gives Democrat Joe Biden a very high chance of winning (discussed more below), we assume in the Senate model that Democrats will control the Senate in the case of a 50/50 split.
-
-(PRIOR SPECIFICATION)
-
-To specify priors for the mean of two-party vote share for Democrats in each state or district, we used a combination of state partisanship, economic fundamentals, candidate incumbency, and projected voter turnout based on demographics. First, we started with state or district partisan lean calculated by FiveThirtyEight (CITE). Partisan lean is the average difference between how a state or district votes and how the country votes overall, based on results from the past two presidential elections as well as statewide elections in 2018. For example, North Carolina has a partisan lean of R+4, meaning that in a 50/50 political environment nationwide, a Republican would be expected to win North Carolina by 4 points. For each partisan lean, we turn the parsian lean into a prior mean of Democratic vote share by adding or subtracting half the partisan lean from 50%. North Carolina is a Republican-leaning state, so we subtract 2 from 50% to get a partisan lean prior of 48% (note that the Republican would then get 52% of the two-party vote, resulting in an R+4 margin of victory).
-
-For the U.S. House and Senate models, we also take into account incumbency advantage. Analysis by FiveThirtyEight (Rakich, 2018) found that incumbent members of the House get a 2.7-point margin boost in their favor, while incumbent senators get a 2.6-point boost. 
-For each incumbent was running in a race for House or Senate, depending on whether they were a Democrat or Republican, we either added or subtracted this incumbency adjustment with the prior mean computed from partisan lean.
-
-For the U.S. Senate model we also take into account incumbency advantage. Analysis by FiveThirtyEight (Rakich, 2018) found that incumbent senators get a 2.6-point boost. For each incumbent was running a Senate race, depending on whether they were a Democrat or Republican, we either added or subtracted this incumbency adjustment with the prior mean computed from partisan lean.
-
-According to FiveThirtyEight (Rakich, 2018),incumbent members of the House get a 2.7-point margin boost in their favor. For the U.S. House races, the incumbency adjustment was calculated by the same method as it was for the Senate races.
-
-
-For the President model, the aforementioned partisan lean for each state made up 90% of our overall prior mean for vote share. We used economic fundamentals for the other 10%. [TO DO] We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
-
-For the House model and the North Carolina U.S. Senate race, the aforementioned partisan lean plus incumbency advantage for each state made up 90% of our overall prior mean for vote share. We used voter demographics and turnout projections from our Interim Report for the other 10%. [TO DO] We did not have the time to do a demographic turnout projection for other states.
-
 
 ## Discussion and Limitations
 
@@ -57,25 +18,33 @@ Recall that the Georgia special election actually has multiple Republicans and D
 
 One desirable feature of our models that we did not include is some kind of correlation between simulations of the Presidential, House, and Senate elections. For instance, if Joe Biden wins the Presidential election by a wide margin, we would also expect Democrats to do better in the House and Senate elections comapred to if Biden did not win (Desilver, 2020). This is especially true by state; if Biden wins North Carolina by a wide margin, this would likely help Democrat Cal Cunningham win the NC Senate race. Additionally, since the Vice President can determine Senate control in the case of a 50/50 split in seats, having model correlations could help account for this dependence between Senate control and Presidential results. Instead, all of our models simply run independently and we assume in the Senate model that Democrats will control the Senate in the case of a 50/50 split given Biden's high chances of winning in our Presidential model.
 
+(SPLITTING INDEPENDENT VOTERS EVENLY)
+
+For making our prior of Democrat vote share, we assume that registered Democrats and Republicans will vote for their party's candidate, and then we split unaffiliated voters evenly between the two parties. FiveThirtyEight's models such as the 2020 President and Senate models allocate undecided voters in polls 50/50 as well, so our assumption is in line with standard approaches. However, other reasonable approaches could have been to allocate unaffiliated voters proportionally to partisan support within the state of interest, or even to calculate the split based on Trump's overperformance of polls in 2016 based on winning over undecided voters (Golshan, 2016). Such approaches have been explored in the past by FiveThirtyEight (Silver, 2008) but are not the norm.
+
+(LACK OF POLL WEIGHTING)
+
+As discussed earlier, we incorporate all polls of likely voters from within 30 days of the election in our President and Senate models. (For the House model, given the sparse amount of polling, we use all polls available, which is still not very many.) A limitation of our model is that we did not explicitly weight any polls more strongly than others. Poll-based models often weight polls based on recency of the poll, sample size, and pollster quality (Silver, 2014). Our model actually does take into account poll recency, since our prior specification assumes that polls closer to election day have less variance (noise) around the true level of candidate support. However, we do not weight based on sample size or pollster quality. While it would have been possible to do this, it would have required making many arbitrary decisions. For example, what is a "good" sample size, and how heavily should sample size be weighted? How do we determine pollster quality, especially if we don't just want to blindly use FiveThirtyEight's pollster ratings? We decided to avoid these issues, especially since it has been observed that such adjustments rarely have a large impact on models (Silver, 2014).
+
+(POLLING)
+
+There are inherent limitations to modeling elections based on polls. In some cases, as with the U.S. House races in North Carolina, there may be few polls or no polls for a given district. Even when polling data is plentiful, such as in most battleground states in the President and Senate models, we are essentially assuming that the polls are reasonably accurate measures of candidate support. It has been well-documented that systematic polling errors during the 2016 election cycle underestimated the support of then-candidate Trump. While many pollsters have adjusted their sample weighting methods (for example, to adjust for education level of those polled), it is not out of the question that we could witness a 2016-level polling error again (Skelley, 2020). It has also been noted that registered Democrats have been overrepresented in recent polling samples compared to their proportion of the population overall, though pollsters and analysts generally claim that equal partisan representation is not necessary in these samples (Cohn, 2020).
+
+(NO COVARIANCE IN HOUSE & SENATE MODELS)
+
+We do account for state-by-state correlations in our President model, but we do not for the Senate model or the House model. Although there is likely still some correlation in these cases, such races are generally a bit more localized (Gillespie et al. 2020) and incumbency advantages can buck national trends. As a result, we treated these races as being more independent and uncorrelated. Possible ideas for addressing this could be to try to compute our own covariances between districts based on voter demographics, or for the Senate to try predicting covariance between states that is similar to that in the Presidential model but "weaker".
+
 
 ## Works Cited
 
 (NEW CITATIONS)
 
-?? Gelman, A. and Heidemanns, M. (2020). President--Forecasting the US 2020 Elections | The Economist. Retrieved October 31, 2020 from https://projects.economist.com/us-2020-forecast/president
+?? Golshan, T. (2016). Survey: Trump Won Big Among Voters Who Decided in the Last 2 Weeks of the Campaign. Retrieved November 1, 2020 from https://www.vox.com/policy-and-politics/2016/12/21/14025198/trump-undecided-final-weeks-survey
 
-?? The Cook Political Report (2020). 2020 Electoral College Ratings. Retrieved October 31, 2020 from https://cookpolitical.com/sites/default/files/2020-10/EC%20Ratings.102820.pdf
+?? Silver, N. (2008). Allocating the Undecideds. Retrieved November 1, 2020 from https://fivethirtyeight.com/features/allocating-undecideds/
 
-?? The Cook Political Report (2020). 2020 Senate Race Ratings. Retrieved October 31, 2020 from https://cookpolitical.com/ratings/senate-race-ratings
+?? Silver, N. (2014). How The FiveThirtyEight Senate Forecast Model Works. Retrieved November 1, 2020 from https://fivethirtyeight.com/features/how-the-fivethirtyeight-senate-forecast-model-works/
 
-?? Ballotpedia (2020). United States Senate special election in Georgia, 2020. Retrieved October 31, 2020 from https://ballotpedia.org/United_States_Senate_special_election_in_Georgia,_2020
+?? Skelley, G. (2020). What Pollsters Have Changed Since 2016 — And What Still Worries Them About 2020. Retrieved November 1, 2020 from https://fivethirtyeight.com/features/what-pollsters-have-changed-since-2016-and-what-still-worries-them-about-2020/
 
-?? FiveThirtyEight (2020). FiveThirtyEight's Partisan Lean. Retrieved October 31, 2020 from https://github.com/fivethirtyeight/data/tree/master/partisan-lean
-
-?? Rakich, N. (2018). How Much Was Incumbency Worth In 2018? Retrieved October 31, 2020 from https://github.com/fivethirtyeight/data/tree/master/partisan-lean
-
-?? Nilsen, E. (2020). Georgia’s two super-competitive Senate races, explained. Retrieved October 31, 2020 from https://www.vox.com/21536826/georgia-senate-race-ossoff-loeffler-warnock-perdue
-
-?? Gillespie, A. et al. (2020). Race for the Senate 2020: Experts’ views from the states. Retrieved October 31, 2020 from https://www.brookings.edu/blog/fixgov/2020/10/30/race-for-the-senate-2020-experts-views-from-the-states/
-
-?? Delsiver, D. (2020). Most Senate Elections Reflect States’ Presidential Votes. Retrieved October 31, 2020 from https://www.pewresearch.org/fact-tank/2020/09/01/most-senate-elections-reflect-states-presidential-votes/
+?? Cohn, N. (2020). Are the Polls Missing Republican Voters? Retrieved November 1, 2020 from https://www.nytimes.com/2020/07/29/upshot/polls-political-party-republicans.html
