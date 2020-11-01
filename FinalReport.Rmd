@@ -284,12 +284,16 @@ p_trump_win
 pres_res = matrix(c(round(p_trump_win,2), 
                     round(1-p_trump_win,2),
                     as.character(round(538-mean(ec_votes_dem))),
-                    as.character(round(mean(ec_votes_dem)))), 
-                    nrow = 2, byrow = TRUE)
+                    as.character(round(mean(ec_votes_dem))),
+                    as.character(round(538-quantile(ec_votes_dem,0.975))),
+                    as.character(round(quantile(ec_votes_dem,0.025))),
+                    as.character(round(538-quantile(ec_votes_dem,0.025))),
+                    as.character(round(quantile(ec_votes_dem,0.975)))),
+                    ncol = 2, byrow = TRUE)
 colnames(pres_res) = c("Trump", "Biden")
-rownames(pres_res) = c("Probability of Wining", "Electoral Votes")
-kable(pres_res, caption = "Predicted Probability of Wining and Electoral Vote Count")
-# include CI for electoral college
+rownames(pres_res) = c("Win Probability", "Estimated EC Votes",
+                       "2.5% Quantile EC Votes", "97.5% Quantile EC Votes")
+kable(t(pres_res), caption = "Predicted Probability of Winning and Electoral Vote Count")
 ```
 
 The probability that Trump wins re-election is `r round(p_trump_win,2)`. The predicted electoral colleges votes for Trump is `r round(538-mean(ec_votes_dem),0)`.
