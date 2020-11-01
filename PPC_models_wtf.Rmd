@@ -16,6 +16,7 @@ library(lubridate)
 library(tidyverse)
 library(R2jags)
 library(gridExtra)
+library(jagsUI)
 ```
 
 ## Data
@@ -144,22 +145,24 @@ jags_data <- list(y=y,t=t,r=r,
 
 # Model with multivariate formulation
 
-```{r mv_model_ppc}
-model_mv_ppc <- tempfile()
+# BORROWED FROM https://rdrr.io/cran/jagsUI/man/ppcheck.html
 
-writeLines("
-model{
+```{r mv_model_ppc}
+model_mv_ppc <- function(){
   for(k in 1:N_polls){
     y[k] ~ dnorm(p[k],1/sigma2_y[r[k]]) #note no longer binomial
-    res[k] = y[k] - p[k]
     p[k] = theta[r[k],t[k]]
   }
   for(j in 2:N_days){
     theta[1:N_states,j] ~ dmnorm(theta[1:N_states,j-1],Phi)
+    res[1:N_states,j] = theta[1:N_states,j] - theta[1:N_states,j-1]
+    theta.new[1:N_states,j] ~ dmnorm(theta[1:N_states,j-1],Phi)
+    res.new[1:N_states,j] = theta.new[1:N_states,j] - theta.new[1:N_states,j-1]
   }
-  
-  
+  fit[1:N_states,] <- sum(res[1:N_states,])
+  fit.new[1:N_states,] <- sum(res.new[1:N_states,])
   Phi ~ dwish(states_corr_mat,N_states+1) #fill in wishart parameters, google JAGS wishart distribution should turn it up
+  
 
   #Use your hierarhciacl prior for sigma2_y from before 
   for(j in 1:N_states){
@@ -178,11 +181,7 @@ model{
   sigma2_0_inv ~ dgamma(.5,.5)
 
 }
-", con=model_mv_ppc)
 ```
-
-  #Derived parameters
-  fit[1:N_states,] <- sum(res[1:N_states,])
 
 ```{r eval=F}
 # Using original correlation matrix (DOESN'T WORK)
@@ -221,11 +220,28 @@ states_cov_matrix = read.csv("states_cov_matrix.csv", header = TRUE)[,-1]
 ```{r}
 jags_data$states_corr_mat <- states_cov_matrix
 set.seed(6)  
-jags_sims_mv_ppc <- jags(data = jags_data, model.file = model_mv_ppc , parameters.to.save = c("theta","Sigma","p","sigma2_y","res"),
+jags_sims_mv_ppc <- jags(data = jags_data, model.file = model_mv_ppc , parameters.to.save = c("theta","Sigma","p","sigma2_y","res","fit","fit.new"),
   n.chains = 3,
             n.adapt = 100,
-            n.iter = 1000,
-            n.burnin = 500,
+            n.iter = 10000,
+            n.burnin = 4000,
             n.thin = 2)
+```
+
+```{r ppc}
+pp.check(jags_sims_mv_ppc, observed = 'fit', simulated = 'fit.new')
+```
+
+```{r residual plots}
+require(reshape2)
+Result_MCMC <- as.mcmc(jags_sims_mv_ppc)
+Result_data <- data.frame(as.matrix(Result_MCMC))
+  ResidualName <- seq(1, N_states)
+for( idx in 1:N_states)
+{
+  ResidualName[idx] <- capture.output(cat( c("res", idx, ""), sep = "."))
+}
+residul_check <- Result_data[, ResidualName]
+ggplot(data = melt(residul_check), aes(x=variable, y=value)) + scale_x_discrete(breaks = c()) + geom_boxplot(aes(fill=variable), outlier.size = 0.1) + theme(legend.position = "none") + labs(y = "Residuals", x = "Observation", title = "Boxplot of Residuals")
 ```
 

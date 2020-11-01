@@ -367,3 +367,4 @@ all_beta_trace = lapply(names(tp_vars), tps)
 do.call(grid.arrange, all_beta_trace)
 ```
 
+
