@@ -550,6 +550,8 @@ To account for shock events,
 
 ## Discussion and Limitations
 
+As polls are an important part of our data sources, we acknowledge that with the COVID-19 pandemic, polling has moved from in-person interviews to phone calls, live surveys and internet questions, which could lead to unknown biases with its lower response rates(Gelman, 2020). A recent election prediction study shows that state polls have much higher margins of error than expected (Shirani-Mehr et al., 2018). 
+
 # Appendix A
 
 ## A.1 Presidential Election Model
@@ -728,6 +730,8 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 Retrieved October 31, 2020 from https://fivethirtyeight.com/features/registered-voter-polls-will-usually-overrate-democrats/
 \newline
 39. The Economist. (2016). Hillary Clinton has got this. Probably. Very probably https://www.economist.com/graphic-detail/2016/11/08/hillary-clinton-has-got-this-probably-very-probably
+\newline
+40. Shirani-Mehr, H., Rothschild, D., Goel, S., &amp; Gelman, A. (2018). Disentangling Bias and Variance in Election Polls. Journal of the American Statistical Association, 113(522), 607-614. doi:10.1080/01621459.2018.1448823
 
 ## Additional EDA
 ```{r Additional EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Presidential Election Data Visualization"}
