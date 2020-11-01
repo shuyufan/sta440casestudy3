@@ -577,7 +577,16 @@ To account for shock events,
 
 ```{r}
 options(max.print = 999999999)
-jags_sims_mv$BUGSoutput$summary
+
+pres_res = as.data.frame(jags_sims_mv$BUGSoutput$summary[,-c(8,9)])
+
+no_p = pres_res[!grepl("p", rownames(pres_res)),]
+no_deviance = no_p[!grepl("deviance", rownames(no_p)),]
+
+no_deviance
+
+cat("mean Rhat:", mean(as.data.frame(jags_sims_mv$BUGSoutput$summary)$Rhat), '\n')
+cat("mean effective sample size:", mean(as.data.frame(jags_sims_mv$BUGSoutput$summary)$n.eff))
 ```
 
 ## A.2 Senate Election Model
@@ -586,7 +595,16 @@ jags_sims_mv$BUGSoutput$summary
 
 ```{r}
 options(max.print = 999999999)
-jags_sims$BUGSoutput$summary
+
+pres_res = as.data.frame(jags_sims$BUGSoutput$summary[,-c(8,9)])
+
+no_p = pres_res[!grepl("p", rownames(pres_res)),]
+no_deviance = no_p[!grepl("deviance", rownames(no_p)),]
+
+no_deviance
+
+cat("mean Rhat:", mean(as.data.frame(jags_sims$BUGSoutput$summary)$Rhat), '\n')
+cat("mean effective sample size:", mean(as.data.frame(jags_sims$BUGSoutput$summary)$n.eff))
 ```
 
 ## A.3 House Election Model
@@ -595,10 +613,46 @@ jags_sims$BUGSoutput$summary
 
 ```{r}
 options(max.print = 999999999)
-jags_sims_house$BUGSoutput$summary
+
+pres_res = as.data.frame(jags_sims_house$BUGSoutput$summary[,-c(8,9)])
+
+no_p = pres_res[!grepl("p", rownames(pres_res)),]
+no_deviance = no_p[!grepl("deviance", rownames(no_p)),]
+
+no_deviance
+
+cat("mean Rhat:", mean(as.data.frame(jags_sims_house$BUGSoutput$summary)$Rhat), '\n')
+cat("mean effective sample size:", mean(as.data.frame(jags_sims_house$BUGSoutput$summary)$n.eff))
 ```
 
-*insert interim report model here*
+
+## Interim Report Model
+
+$$
+\begin{aligned}
+Vote_i \sim Binomial(n_i, \pi_i) \\
+logit(\pi_i) = \alpha_0 + \Sigma_{j = 1,2,3}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{j = 5,6}\beta_j*I(Gender_i = Gender \ Category_g) +\\
+\Sigma_{j = 7,8}\beta_j*I(Race_i = Race \ Category_r) + \Sigma_{j = 9,10,11}\beta_j*I(Age_i = Age \ Category_a) +\\
+\Sigma_{j = 12,13}\beta_j*I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 14,...,17}\beta_j*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 18,...,21}\beta_j*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
+\Sigma_{j = 22,...,27}\beta_j*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
+\Sigma_{j = 28,...,33}\beta_j*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
+\end{aligned}
+$$
+
+where:
+$$
+\begin{aligned}
+Income \ Category_s \in \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\} \\
+Gender \ Category_g \in \{Male, Unspecified\} \\
+Race \ Category_r \in \{Black, Other\} \\
+Age \ Category_a \in \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
+Party \ Category_p \in \{Republican, \ Other\}
+\end{aligned}
+$$
+
+Where $\pi_i$ is the probability that subgroup $i$ votes. $Vote_i$ is the number of people in the $i$th subgroup that voted in the 2016 election. The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
 We fit the voter turnout model from the Interim Report on the 2020 registered voter dataset. The predicted values were the number of people that will vote for each demographic subgroup in each congressional district. We made a reasonable assumption that if someone is registered as a Democrat, that they will indeed vote for the Democratic candidate (and made the same assumption for registered Republicans). If the demographic subgroup had third/unaffiliated party, then we split their predicted number of voters evenly between the Democrat and Republican parties. From this, we calculated Democratic party vote share for each district by taking the ratio of the predicted number of Democratic voters to total number of registered voters in that district.
 
@@ -609,7 +663,9 @@ We fit the voter turnout model from the Interim Report on the 2020 registered vo
 ## Traceplots for Presidential Model
 
 ```{r, eval = F}
-# change N_states to be pres specific
+states = c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
+N_states = length(states)
+
 betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
 parameters = c(betas_day_of_election)
 
@@ -628,7 +684,8 @@ do.call(grid.arrange, all_beta_trace)
 ## Traceplots for Senate Model
 
 ```{r, eval = F}
-# CHANGE STATES TO BE SENATE SPECIFIC
+states = c("Alaska", "Arizona", "Colorado", "Georgia", "Georgia-Special", "Iowa", "Kansas", "Maine", "Michigan", "Montana", "North Carolina", "South Carolina", "Texas")
+N_states = states %>% length
 betas_day_of_election = sapply(1:N_states, function(i) {paste0("beta.", i, ".1.")} )
 parameters = c(betas_day_of_election)
 
@@ -648,7 +705,7 @@ do.call(grid.arrange, all_beta_trace)
 
 ```{r, eval = F}
 # CHANGE TO BE HOUSE SPECIFIC, IT WOULD BE DISTRCITS
-betas_day_of_election = sapply(1:N_states, function(i) {paste0("theta.", i, ".1.")} )
+betas_day_of_election = sapply(1:13, function(i) {paste0("beta.", i, ".1.")} )
 parameters = c(betas_day_of_election)
 
 tp_vars = data.frame(jags_sims_house$BUGSoutput$sims.matrix)[,parameters]
