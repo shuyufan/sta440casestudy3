@@ -455,7 +455,7 @@ for (i in 1:length(districts)) {
 
 ```{r, echo = F}
 # ROUND
-house_res = matrix(rbind(rep_vote_shares, rep_intervals), nrow = 13, byrow = TRUE)
+house_res = matrix(round(rbind(rep_vote_shares, rep_intervals),2), nrow = 13, byrow = TRUE)
 house_res = house_res[, c(1,3,2)]
 house_res[12,3] = 0
 colnames(house_res) = c("Estimate", "2.5% Quantile", "97.5% Quantile")
@@ -464,6 +464,8 @@ rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
                         "District 9", "District 10", "District 11", "District 12", "District 13")
 kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
 ```
+
+From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50).
 
 ```{r, eval = F}
 nc_cong_dist <- rgdal::readOGR("HB 1029, 3rd Edition - Shapefile/C-Goodwin-A-1-TC.shp")
