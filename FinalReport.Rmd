@@ -74,6 +74,10 @@ library(usmap)
 
 ## Introduction
 
+The United States is getting closer to the 2020 presidential and Congressional elections on November 3, 2020. All 435 seats in the United States House of Representatives, 35 of the 100 seats in the United States Senate, and the office of President of the United States are up for election (Wikipedia, 2020). With the current polarizing political landscape, the election outcomes are significant to determine the next stage of this country. Polarization also makes election prediction both less and more difficult. It is less difficult because election results are less subject to election or candidate-specific factors, and it is more difficult as elections become increasingly close and fierce competitions, especially for presidential elections (Gelman, 2020). Therefore, we believe 2020 is a particularly challenging yet interesting year for statisticians to predict election outcomes and compare results with other predictions and the actual outcome to reflect on methodologies and unaccounted predictors. These election predictions not only inform the public about campaign trends and political sentiments but also help political strategists make decisions on allocating campaign resources for different candidates (Linzer et al.). American political pundits have been spending countless hours obtaining and analyzing relevant data to predict the election outcomes, and historical models and predictions and pre-election polls are two of the most important sources of information (Linzer et al.). In this report, similarly, we will also be using both literature review and polls for 2020 to build our prediction models.
+\newline
+We plan to build prediction models for the 2020 U.S. presidential election and the Senate election nationwide. Also, among all states, we decide to further predict the U.S. House election outcome for North Carolina, as it has been a swing state in presidential and Congressional elections for decades. Since 1996, the Republican statewide vote share in Congressional elections has varied "from a low of 45% in 2008 to a high of 55% in 2014" (Perrin et al.). To summarize, this report aims to use statistical models to predict (1) the outcome of the presidential election, (2) whether the US Senate remains in Republican control, (3) the electoral college vote, (4) the outcomes of all NC Congressional elections (the 13 federal Representatives to Congress), and (5) the outcome of the NC Senate election, including characterization of uncertainty in predictions.
+
 ## Data Description
 
 Senate poll/House poll: from https://data.fivethirtyeight.com/
@@ -85,7 +89,7 @@ Abramowitz data: from the Economist paper (pres)
 
 ## Exploratory Data Analysis
 
-```{r load data}
+```{r load data, include = F}
 pres_eda_df = readRDS("cleaned_pres_polls.rds")
 econ_eda_df = readRDS("cleaned_econ_polls.rds")
 econ_state_df = econ_eda_df %>%
@@ -98,35 +102,28 @@ senate_state_df = senate_eda_df %>%
   summarise(n=n(),avg=mean(y))
 ```
 
-```{r president EDA}
-#number of polls for each state in the economist paper data set
-plot_usmap(data = econ_state_df, values = "n", color = "red") + 
-  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
-  theme(legend.position = "right")
-#democrat percentage in polling data
-ggplot(econ_state_df, aes(days_to_election, y)) + geom_bin2d()
+```{r president EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Presidential Election Data Visualization"}
 #democrat percentage by states
-plot_usmap(data = econ_state_df, values = "avg", color = "black") + 
-  scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
-  theme(legend.position = "right")
+p1 <- plot_usmap(data = econ_state_df, values = "avg", color = "black") + 
+  scale_fill_continuous(low = "red", high = "blue",name = "Average Democrat Vote Share", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For Democrat Vote Share Among States of Interest")
+#democrat percentage in polling data
+p2 <- ggplot(econ_eda_df, aes(days_to_election, y)) + geom_point() + labs(y="Percentage", x = "Days to Election", title = "Does Democrat Vote Share Varies \n With Days To Election In Polls?") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line")) + scale_x_reverse()
+
+grid.arrange(grobs = list(p1,p2), ncol = 2)
 ```
 
-```{r senate EDA}
-#number of polls for senate
-plot_usmap(data = senate_state_df, values = "n", color = "red") + 
-  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
-  theme(legend.position = "right")
-#biden percentage in polling data
-ggplot(senate_eda_df, aes(days_to_election, y)) + geom_bin2d()
+```{r senate EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="U.S. Senate Election Data Visualization"}
 #democrat percentage by states
-plot_usmap(data = senate_state_df, values = "avg", color = "black") + 
-  scale_fill_continuous(low = "red", high = "white",name = "Average Democrat Vote Share", label = scales::comma) + 
-  theme(legend.position = "right")
-```
-```{r house EDA}
+s1 <- plot_usmap(data = senate_state_df, values = "avg", color = "black") + 
+  scale_fill_continuous(low = "red", high = "blue",name = "Average Democrat Vote Share", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For Democrat Vote Share Among States of Interest")
 #biden percentage in polling data
-ggplot(house_eda_df, aes(x=days_to_election, y=y,color=as.factor(seat_number))) + geom_point()
+s2 <- ggplot(senate_eda_df, aes(days_to_election, y)) + geom_point() + labs(y="Percentage", x = "Days to Election", title = "Does Democrat Vote Share Varies \n With Days To Election In Polls?") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line")) + scale_x_reverse()
+
+grid.arrange(grobs = list(s1,s2), ncol = 2)
 ```
+
 
 ## Method
 
@@ -193,4 +190,24 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 25. Igielnik, R. (2020). Men and Women in the U.S. Continue to Differ in Voter Turnout Rate. Retrieved October 22, 2020, from https://www.pewresearch.org/fact-tank/2020/08/18/men-and-women-in-the-u-s-continue-to-differ-in-voter-turnout-rate-party-identification/
 \newline
 26. Akee, R. (2019). Voting and Income. Retrieved October 22, 2020, from https://econofact.org/voting-and-income
+\newline
+27. Wikipedia. 2020 United States elections. (2020, October 27). Retrieved October 31, 2020, from https://en.wikipedia.org/wiki/2020_United_States_elections
+\newline
+28. Gelman, A., &amp; Heidemanns, M. (2020). President-Forecasting the US 2020 elections. Retrieved November 01, 2020, from https://projects.economist.com/us-2020-forecast/president
+\newline
+29. Gelman, A., Hullman, J., Wlezien, C., & George, E. M. (2020). Information, incentives, and goals in election forecasts. Judgment and Decision Making, 15(5), 863-880. 
 
+## Additional EDA
+```{r Additional EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Presidential Election Data Visualization"}
+#number of polls for each state in the economist paper data set
+plot_usmap(data = econ_state_df, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For The Number of Filtered Polls Among States")
+```
+
+```{r Additional EDA Senate, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Senate Election Data Visualization"}
+#number of polls for senate
+plot_usmap(data = senate_state_df, values = "n", color = "red") + 
+  scale_fill_continuous(name = "Number of Polls", label = scales::comma) + 
+  theme(legend.position = "right") + labs(title = "Map For The Number of Filtered Polls Among States")
+```
