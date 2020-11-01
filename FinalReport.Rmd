@@ -601,7 +601,7 @@ To account for shock events,
 
 ## Discussion and Limitations
 
-As polls are an important part of our data sources, we acknowledge that with the COVID-19 pandemic, polling has moved from in-person interviews to phone calls, live surveys and internet questions, which could lead to unknown biases with its lower response rates(Gelman, 2020). A recent election prediction study shows that state polls have much higher margins of error than expected (Shirani-Mehr et al., 2018). 
+As polls are an important part of our data sources, we acknowledge that with the COVID-19 pandemic, polling has moved from in-person interviews to phone calls, live surveys and internet questions, which could lead to unknown biases with its lower response rates(Gelman, 2020). A recent election prediction study shows that state polls have much higher margins of error than expected (Shirani-Mehr et al., 2018). In addition, COVID-19 posted significant uncertainty to election outcomes. For example, rejected absentee ballots due to mailing issues were not as significant in previous elections. But in 2020, so much more voters are mailing their votes, and an unknown number of them will be rejected, potentially changing voter turnout (Rakich, 2020). We are also not using a potentially very informative data set, which is the early voting data for 2020 elections, available on websites such as [https://electproject.github.io/Early-Vote-2020G/index.html]. We excluded them because abundant literature has proven early voting data to have strong partisan bias, but because of the high early voting turnout this year, it might be helpful to train our models (McDonald, 2020) with early voting updates.
 
 # Appendix A
 
@@ -840,6 +840,8 @@ Retrieved October 31, 2020 from https://fivethirtyeight.com/features/registered-
 39. The Economist. (2016). Hillary Clinton has got this. Probably. Very probably https://www.economist.com/graphic-detail/2016/11/08/hillary-clinton-has-got-this-probably-very-probably
 \newline
 40. Shirani-Mehr, H., Rothschild, D., Goel, S., &amp; Gelman, A. (2018). Disentangling Bias and Variance in Election Polls. Journal of the American Statistical Association, 113(522), 607-614. doi:10.1080/01621459.2018.1448823
+\newline
+41. McDonald, M. (2020). 2020 General Election Early Vote Statistics. Retrieved November 01, 2020, from https://electproject.github.io/Early-Vote-2020G/index.html
 
 ## Additional EDA
 ```{r Additional EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Presidential Election Data Visualization"}
