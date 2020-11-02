@@ -309,9 +309,9 @@ p_trump_win
 trump_pwin_time = NULL
 for (j in 1:N_states) {
   new_col = NULL
-for (t in 1:N_days) {
-  new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
-}
+  for (t in 1:N_days) {
+    new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
+  }
   trump_pwin_time = cbind(trump_pwin_time, new_col)
 }
 colnames(trump_pwin_time) <- states
