@@ -145,7 +145,7 @@ voter_hist_districts_resp  = voter_hist_districts_resp  %>%
 voter_grouped$voterpercent <- voter_grouped$votes / voter_grouped$n
 ```
 
-```{r make cong dist, include = F}
+```{r make cong dist}
 voter_cong = voter_hist_districts_resp %>%
   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
   summarise(n = n(), votes = sum(vote_or_not))
@@ -156,7 +156,7 @@ voter_cong %>%
 voter_cong$voterpercent <- voter_cong$votes / voter_cong$n
 ```
 
-```{r EDA cong-not-include, include=F, fig.height = 4, fig.width = 8}
+```{r EDA cong, echo=F}
 ggplot(voter_cong, aes(x = cong_dist_abbrv, y = voterpercent)) + geom_boxplot(aes(fill = party_cd)) + labs(y="Turnout Percentage", x = "Congressional District", title = "Voter Turnout for Different Congressional Districts", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
 ```
 
@@ -169,7 +169,7 @@ binned_age_party <- ggplot(voter_grouped, aes(x = party_cd, y = voterpercent)) +
 grid.arrange(grobs = list(binned_race_party, binned_gender_party, binned_age_gender, binned_age_party), ncol = 2)
 ```
 
-After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. From plot of congressional district vs. turnout percentage (see Appendix), we can see that for different districts, turnout percentage varies somewhat among the different parties. For instance, districts 1, 2, and 4 have higher turnout among Republicans (as opposed to amog Democrats or third/other parties). Districts 5 and 13 appear to have higher turnout among Democrats relative to the other parties. Also, in the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
+After cleaning up data set and grouping demographic factors for analysis, Figure 1 aims to explore the the differences in voter turnout across different levels of party affiliation, gender, and age range. The upper left plot shows that white registered voters, on average, are more likely to vote than black registered voters, but black voters registered as Democrats have a comparable voter turnout as white voters. In the upper right plot, female registered voters are more likely to vote than male voters. The lower left plot shows that registered voters in the age range of 18-29 are the least likely to vote, which is consistent with existing literature (Kim et al.). Similar to the upper right plot, female voters have a higher voter turnout than male voters in all age groups displayed. The lower right plot shows a higher voter turnout among voters registered to be Democrats than those Republicans. In the Appendix, exploratory data analysis for county median household income and ungrouped demographic variables are shown in the additional EDA section. After comparing the plots, we conclude that grouping accurately retains the differences of voter turnout across different levels of these predictors, and decide to continue using grouped data for the modeling process.
 
 # Method
 
@@ -182,27 +182,26 @@ We decided to use a fixed-effect logistic regression model. Since we are analyzi
 $$
 \begin{aligned}
 Vote_i \sim Binomial(n_i, \pi_i) \\
-logit(\pi_i) = \alpha_0 + \Sigma_{j = 1,2,3}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{j = 5,6}\beta_j*I(Gender_i = Gender \ Category_g) +\\
-\Sigma_{j = 7,8}\beta_j*I(Race_i = Race \ Category_r) + \Sigma_{j = 9,10,11}\beta_j*I(Age_i = Age \ Category_a) +\\
-\Sigma_{j = 12,13}\beta_j*I(Party_i = Party \ Category_p) + \\
-\Sigma_{j = 14,...,17}\beta_j*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
-\Sigma_{j = 18,...,21}\beta_j*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
-\Sigma_{j = 22,...,27}\beta_j*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
-\Sigma_{j = 28,...,33}\beta_j*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
+logit(\pi_i) = \alpha_0 + \Sigma_{s \in S}\beta_{j}*I(Income_i = Income \ Category_s) + \Sigma_{g \in G}\beta_g*I(Gender_i = Gender \ Category_g) +\\
+\Sigma_{r \in R}\beta_r*I(Race_i = Race \ Category_r) + \Sigma_{a \in A}\beta_a*I(Age_i = Age \ Category_a) +\\
+\Sigma_{p \in P}\beta_p*I(Party_i = Party \ Category_p) + \\
+\Sigma_{g \in G, p \in P}\beta_{gp}*I(Gender_i = Gender \ Category_g)I(Party_i = Party \ Category_p) + \\
+\Sigma_{r \in R, p \in P}\beta_{rp}*I(Race_i = Race \ Category_r)I(Party_i = Party \ Category_p) + \\
+\Sigma_{g \in G, a \in A}\beta_{ga}*I(Gender_i = Gender \ Category_g)I(Age_i = Age \ Category_a) + \\
+\Sigma_{p \in P, a \in A}\beta_{pa}*I(Party_i = Party \ Category_p)I(Age_i = Age \ Category_a) 
 \end{aligned}
 $$
 
 where:
 $$
 \begin{aligned}
-Income \ Category_s &\in \{Median \ Income \ \$46864-\$52798, \ Median \ Income \ \$52798-\$64509, \\ &\ Median \ Income > \$64509\} \\
-Gender \ Category_g &\in \{Male, Unspecified\} \\
-Race \ Category_r &\in \{Black, Other\} \\
-Age \ Category_a &\in \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
-Party \ Category_p &\in \{Republican, \ Other\}
+S = \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\}\\
+G = \{Male, Unspecified\} \\
+R = \{Black, Other\} \\
+A = \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
+P = \{Republican, \ Other\}
 \end{aligned}
 $$
-
 
 Where $\pi_i$ is the probability that subgroup $i$ votes. $Vote_i$ is the number of people in the $i$th subgroup that voted in the 2016 election. The baseline is `Median Income < $46864` for income, `Female` for gender, `White` for race, `18-29` for age, and `Democrat` for party affiliation.
 
@@ -397,7 +396,7 @@ voter_grouped %>%
 
 Most of the standardized residuals (shown in Figure 4) are within $\pm$ 2, but some points have somewhat larger values. This means that for the majority of the groups, the model predicts fairly well. 
 
-```{r external-validation, fig.width = 8, fig.height = 4, include = F, message = F, warning = F}
+```{r external-validation, fig.width = 8, fig.height = 4, echo = F, message = F, warning = F}
 grouped_voters_2012 = readRDS("grouped_voter_data_2012.rds")
 
 grouped_voters_2012 = grouped_voters_2012 %>%
@@ -422,73 +421,19 @@ binary_model_waic = binary_model_waic_obj$estimates[3,1]
 ```
 
 ```{r, include = F}
-cong_dist_rand_eff = readRDS("randeff_revision_cong_dist_grouped_model_output.rds")
+randeff_model = readRDS("randeff_sa_grouped_model_whole_data_output.rds")
 #summary(randeff_model)
 ```
 
 ```{r warning=FALSE, echo = F}
-cong_dist_rand_eff_waic_obj = waic(cong_dist_rand_eff)
-cong_dist_rand_eff_aic = cong_dist_rand_eff_waic_obj$estimates[3,1]
+randeff_model_waic_obj = waic(randeff_model)
+randeff_model_aic = randeff_model_waic_obj$estimates[3,1]
 #saveRDS(binary_model, "grouped_model_no_randeff_whole_dataset.rds")
-```
-
-
-```{r extern-validation, include = F}
-voters_2012 = readRDS("filtered_ncvoterhis_resp_binned_2012.rds")
-
-# grouped_voters_2012 = voters_2012 %>%
-#   group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned) %>%
-#   summarise(n = n(), votes = sum(vote_or_not))
-# 
-# grouped_voters_2012 %>%
-#   arrange(., n)
-# 
-# grouped_voters_2012 = grouped_voters_2012 %>%
-#   mutate(med_inc_binned = case_when(
-#     med_inc_binned == "46864 _ 52798" ~ '46864 - 52798',
-#     med_inc_binned == "52798 _ 64509" ~ '52798 - 64509',
-#     TRUE ~ med_inc_binned
-#   ))
-# 
-# extern_est_main_model = predict(binary_model, grouped_voters_2012, type = "response")[,1]
-# extern_rmse_main_model = sqrt(mean((extern_est_main_model - grouped_voters_2012$votes)^2))
-
-grouped_voters_2012 = voters_2012 %>%
-  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
-  summarise(n = n(), votes = sum(vote_or_not))
-
-grouped_voters_2012 = grouped_voters_2012 %>%
-  mutate(med_inc_binned = case_when(
-    med_inc_binned == "46864 - 52798" ~ '46864 _ 52798',
-    med_inc_binned == "52798 - 64509" ~ '52798 _ 64509',
-    TRUE ~ med_inc_binned
-  ))
-
-rmse <- function(y, yrep) {
-  #yrep_mean <- colMeans(yrep)
-  sqrt(mean((yrep - y)^2))
-}
-
-# 2012 validation for randeff model
-extern_est_randeff_model = predict(cong_dist_rand_eff, grouped_voters_2012, type = "response")[,1]
-extern_rmse_randeff_model = sqrt(mean((extern_est_randeff_model - grouped_voters_2012$votes)^2))
-
-# med_inc_binned52798_64509 (6 nonzero containing CI)
-# gender_codeU (7 nonzero containing CI)
-# race_codeBlack (5)
-# race_codeOther (9)
-# age_binned30M44 (7)
-# age_binned45M59 (8)
-# age_binned60P (9)
-# party_cdOther (7)
-# party_cdREP (8)
 ```
 
 As part of our sensitivity analysis, we fit a model with identical predictor variables to our main model but with different priors. Based on literature review, we chose normal priors for the main effects that aligned with expectations that older voters tend to vote more often (McDonald, 2020), men tend to vote less often than women (Igielnik, 2020), party-unaffiliated voters tend to vote less often (Killian, 2012), and wealth tends to correlate positively with voter turnout (Akee, 2019). For these main effects, we chose the normal priors to have means somewhere between 0.5 and 1, and we chose a variance of 3. For all other terms (including interactions and intercept), we chose normal priors with a mean of 0 and a variance of 3. Changing these priors had minimal effect on the resulting coefficients and confidence intervals (see model output in Appendix).
 
-We also fit another model with random intercept and slopes with all of the predictors for congressional districts to capture possible variation between voters in different geographic parts of North Carolina. The coefficients for the main effects (included in the Appendix, along with group-level standard deviation) look largely the same compared to the main model, with the exception that the coefficients for income are slightly different in the two models. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(cong_dist_rand_eff_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`). Although the RMSE when predicting on 2012 data for the random effects model (`r extern_rmse_randeff_model`) is better, we ultimately decided to keep the main effects model because of the higher level of stability in its coefficients. The main effects model also had smaller residuals and better coverage (see Appendix for residual plot and coverage plot for the random effects model). 
-
-With the addition of random slopes, we see that for black race, congressional districts 1, 2, 8, 10, and 11 have random slopes that are significant (determined by the fact that their 95% CI's do not contain zero). Looking at both main and random effects, holding all other variables at baseline, the expected odds of voting increases by a multiplicative factor for black people from districts 8 and 10, while those odds decreases by a multiplicative factor for black people from districts 1, 2, and 11. For the 45-59 age group, the random slopes for districts 2, 3, 4, 7, 8, 9, and 11 are significant, and the expected odds of voting increases by a multiplicative factor for 45-59 year-olds from those districts, holding all else at baseline. For the Republican party, random slopes for districts 2, 4, 5, 8, 10, and 13 are significant, and the expected odds of voting increases by a multiplicative factor for Republicans in those districts, holding all else at baseline.
+We also fit another model with a random intercept for congressional districts to capture poissble variation between voters in different geographic parts of North Carolina. The coefficients (included in the Appendix, along with group-level standard deviation) look largely the same compared to the main model, with the exception that the coefficients for income are a bit smaller. This is perhaps because some of the variations between different income groups can be attributed to differences between counties. We did not choose this model as our main model because it has a higher WAIC (`r format(round(randeff_model_aic, 2), scientific=F)`) compared to the main model (`r format(round(binary_model_waic, 2), scientific=F)`).
 
 Finally, since all of the models discussed above were fit using a Bayesian framework via the \texttt{brms} package, we decided to fit a frequentist model for comparison. The model output (included in the Appendix) shows little difference from the results of our main Bayesian model.
 
@@ -563,10 +508,6 @@ https://www.pewresearch.org/politics/2016/09/13/2-party-affiliation-among-voters
 26. Akee, R. (2019). Voting and Income. Retrieved October 22, 2020, from https://econofact.org/voting-and-income
 
 ## Additional EDA
-
-```{r EDA cong, echo=F, fig.height = 4, fig.width = 8}
-ggplot(voter_cong, aes(x = cong_dist_abbrv, y = voterpercent)) + geom_boxplot(aes(fill = party_cd)) + labs(y="Turnout Percentage", x = "Congressional District", title = "Voter Turnout for Different Congressional Districts", fill = "Party") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
-```
 
 ```{r, echo = F, fig.width = 8, fid.height = 4}
 binned_income <- ggplot(voter_grouped, aes(x = med_inc_binned, y = voterpercent)) + geom_boxplot() + labs(aes(fill = party_cd), y="Turnout Percentage", x = "County Median Household Income", title = "Voter Turnout for Different \n Median Household Income and Party Affliation") +theme(plot.title = element_text(hjust = 0.5,size = 8),axis.title=element_text(size=8),legend.key.size = unit(0.5,"line"))
@@ -796,18 +737,18 @@ for(i in seq(1, ncol(post)-3-n_to_plot, n_to_plot)) {
 ## Model with More Informative Priors
 
 ```{r include=FALSE, cache = TRUE}
-priors <- c(set_prior("normal(0,1.5)", class = "Intercept"),
-            set_prior("normal(0,1.5)", class = "b"),
-            set_prior("normal(0.5,1.5)", class = "b", coef = "age_binned30M44"),
-            set_prior("normal(0.75,1.5)", class = "b", coef = "age_binned45M59"),
-            set_prior("normal(1,1.5)", class = "b", coef = "age_binned60P"),
-            set_prior("normal(-0.5,1.5)", class = "b", coef = "gender_codeM" ),
-            set_prior("normal(-0.5,1.5)", class = "b", coef = "race_codeBlack" ),
-            set_prior("normal(-1,1.5)", class = "b", coef = "race_codeOther" ),
-            set_prior("normal(-0.5,1.5)", class = "b", coef = "party_cdOther" ),
-            set_prior("normal(0.5,1.5)", class = "b", coef = "med_inc_binned46864M52798" ),
-            set_prior("normal(0.5,1.5)", class = "b", coef = "med_inc_binned52798M64509" ),
-            set_prior("normal(1,1.5)", class = "b", coef = "med_inc_binned>64509" ))
+priors <- c(set_prior("normal(0,3)", class = "Intercept"),
+            set_prior("normal(0,3)", class = "b"),
+            set_prior("normal(0.5,3)", class = "b", coef = "age_binned30M44"),
+            set_prior("normal(0.75,3)", class = "b", coef = "age_binned45M59"),
+            set_prior("normal(1,3)", class = "b", coef = "age_binned60P"),
+            set_prior("normal(-0.5,3)", class = "b", coef = "gender_codeM" ),
+            set_prior("normal(-0.5,3)", class = "b", coef = "race_codeBlack" ),
+            set_prior("normal(-1,3)", class = "b", coef = "race_codeOther" ),
+            set_prior("normal(-0.5,3)", class = "b", coef = "party_cdOther" ),
+            set_prior("normal(0.5,3)", class = "b", coef = "med_inc_binned46864M52798" ),
+            set_prior("normal(0.5,3)", class = "b", coef = "med_inc_binned52798M64509" ),
+            set_prior("normal(1,3)", class = "b", coef = "med_inc_binned>64509" ))
 
 
 binary_model_newpriors <-
@@ -835,88 +776,38 @@ kable(coef_table2)
 
 ## Model with Random Effect for Congressional District
 
-```{r echo=FALSE, message = F, warning = F}
+```{r echo=FALSE}
 #summary(randeff_model)
 
-coef_table3 = round(fixef(cong_dist_rand_eff),2)
+coef_table3 = round(fixef(randeff_model),2)
 colnames(coef_table3) = c("Estimate", "Std. Error", "2.5% Quantile", "97.5% Quantile")
 #rownames(coef_table3) = c("Intercept", "Median Income > 64,509", "Median Income 46,864-52,798", "Median Income 52,798-64,509", "Gender Male", "Gender Unspecified", "Race Black", "Race Other", "Age 30-44", "Age 45-59", "Age 60+", "Party Republican", "Party Other", "Gender Male:Party Republican", "Gender Unspecified:Party Republican", "Gender Male:Party Other", "Gender Unspecified:Party Other", "Race Black:Party Republican", "Race Other:Party Republican",  "Race Black:Party Other", "Race Other:Party Other",  "Gender Male:Age 30-44", "Gender Unspecified:Age 30-44", "Gender Male:Age 45-59", "Gender Unspecified:Age 45-59", "Gender Male:Age 60+", "Gender Unspecified:Age 60+", "Age 30-44:Party Republican", "Age 45-59:Party Republican", "Age 60+:Party Republican", "Age 30-44:Party Other", "Age 45-59:Party Other", "Age 60+:Party Other")
 kable(coef_table3) 
 #ranef(randeff_model)
-group_sd_obj = VarCorr(cong_dist_rand_eff)
+group_sd_obj = VarCorr(randeff_model)
 group_sd = group_sd_obj$cong_dist_abbrv$sd[1]
 ```
 
-```{r, echo = F, message = F, warning = F}
-rand_slopes = ranef(cong_dist_rand_eff)
-kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"race_codeBlack"],2)), caption = "Race Black Random Slope")
-kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"age_binned45M59"],2)), caption = "Age 45-59 Random Slope")
-kable(cbind(seq(1,13),round(rand_slopes$cong_dist_abbrv[,,"party_cdREP"],2)), caption = "Party Republican Random Slope")
-```
-
-```{r, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Coverage Plot for Random Effects Model", message = F, warning = F}
-voter_grouped = voter_hist_districts_resp %>%
-  mutate(med_inc_binned = as.character(med_inc_binned)) %>%
-  mutate(med_inc_binned = case_when(
-    as.character(med_inc_binned) == "46864 - 52798" ~ '46864 _ 52798',
-    as.character(med_inc_binned) == "52798 - 64509" ~ '52798 _ 64509',
-    TRUE ~ med_inc_binned)) %>%
-  group_by(age_binned, gender_code, party_cd, race_code, med_inc_binned, cong_dist_abbrv) %>%
-  summarise(n = n(), votes = sum(vote_or_not))
-
-d <-
-  voter_grouped %>% 
-  ungroup() %>% 
-  mutate(case = factor(1:nrow(voter_grouped))) 
-
-p <-
-  predict(cong_dist_rand_eff) %>%
-  as_tibble() %>%
-  bind_cols(d)
-
-dot = ggplot(data = d, aes(x = case, y = votes / n)) +
-  geom_pointrange(data = p,
-                  aes(y    = Estimate / n,
-                      ymin = Q2.5     / n ,
-                      ymax = Q97.5    / n),
-                  color = '#2F4F4F',
-                  shape = 1, alpha = 1/3) + 
-  geom_point(data=d, aes(x=case, y=votes/n)) +
-  theme(axis.text.x=element_blank()) +
-  labs(y = "Voter Turnout", x = "Groups")
-dot
-```
-
-```{r resids-randeff, echo = F, fig.width = 8, fig.height = 4, fig.cap = "Random Effects Model Residual Plot", message = F, warning = F}
-# Residuals
-
-voter_grouped %>%
-  add_residual_draws(cong_dist_rand_eff) %>%
-  ggplot(aes(x = .row, y = .residual/sqrt(var(.residual)))) +
-  stat_pointinterval() + 
-  geom_hline(yintercept = 0, color="red") + 
-  labs(x = "Group", y = "Standardized Residuals")
-```
+The group-level standard deviation is `r round(group_sd, 3)`.
 
 \pagebreak
 
 ## Frequentist Model
 
-```{r include=FALSE, cache = T, message = F, warning = F}
+```{r include=FALSE, cache = T}
 freq_model = glm(cbind(votes, n-votes) ~ med_inc_binned + gender_code + race_code + age_binned + party_cd + gender_code:party_cd + race_code:party_cd + gender_code:age_binned + party_cd:age_binned, data=voter_grouped, family="binomial")
 ```
 
-```{r include=FALSE, message = F, warning = F}
+```{r include=FALSE}
 freq_summary = summary(freq_model)
 freq_coefs = freq_summary$coefficients[,1:2]
 #list(summary(freq_model))
 freq_ci = confint(freq_model)
 ```
 
-```{r echo=FALSE, message = F, warning = F}
+```{r echo=FALSE}
 freq_output = cbind(freq_coefs, freq_ci)
 kable(freq_output, digits=2) 
 ```
 
 \pagebreak
-
