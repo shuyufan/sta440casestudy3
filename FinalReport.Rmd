@@ -47,6 +47,7 @@ pkgTest("usmap")
 pkgTest("directlabels")
 pkgTest("sf")
 pkgTest("hexbin")
+pkgTest("broom")
 ```
 
 ```{r packages, include=FALSE, message = F}
@@ -73,6 +74,7 @@ library(usmap)
 library(directlabels)
 library(sf)
 library(hexbin)
+library(broom)
 #library(xtable)
 ```
 
