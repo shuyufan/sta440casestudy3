@@ -95,24 +95,6 @@ For the Senate model, the states chosen are Alabama, Alaska, Arizona, Colorado, 
 \newline
 For the U.S. House election, due to the scarcity of poll responses for the NC House elections, we included all poll responses within 115 days of the election. We will supplement the polls with the results from our interim report to predict the House election for NC.
 
-*Appendix B stuff*
-
-### Presidential Election Model: 
-- `2020 US presidential election polls - all_polls.csv`: 2020 U.S. Presidential Election Polls compiled by *The Economist*, publiclly available at https://projects.economist.com/us-2020-forecast/president/how-this-works. 
-- `partisan_leans_538.csv`: effect of partisan lean on the Democratic candidate's presidential election vote share in each state. Available at https://github.com/fivethirtyeight/data/tree/master/partisan-lean.
-- `abramowitz_data.csv`: downloaded from Andrew Gelman's Github repository on 2020 Presidential Election. This data set contains information on each 1948-2016 election year's 2nd quarter GDP performance, incumbent party's June approval rating and incumbent party's vote share. Available at https://github.com/TheEconomist/us-potus-model.
-- `states_cov_matrix_full.csv`: covariance matrix of states which take into account similarity between states based on their demographic and political profiles. Retrieved from Andrew Gelman's Github repository on 2020 Presidential Election. 
-- `abramowitz_additional.csv`: Supplemented `abramowitz_data.csv` with the corresponding year's 2nd quarter real income growth, 3rd quarter real income growth (data from *FRED* https://fred.stlouisfed.org/series/A067RO1Q156NBEA) and S&P stock performance 3 months prior to the election (data from https://www.multpl.com/s-p-500-historical-prices/table/by-month). 
-
-### Senate Election Model: 
-- `senate_polls.csv`: *this is from course website* https://projects.fivethirtyeight.com/polls-page/senate_polls.csv
-- `partisan_leans_538.csv`: same as the data set in presidential election model
-- We also incroporated incumbency advantage in the model, which as *FiveThirtyEight* suggests, is on average 2.6 for senate incumbents (https://fivethirtyeight.com/features/how-much-was-incumbency-worth-in-2018/).
-
-### House Election Model (for North Carolina):
-- `house_polls.csv`: *this is from course website* https://projects.fivethirtyeight.com/polls-page/house_polls.csv
-- `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
-
 ## Exploratory Data Analysis
 
 ```{r load data, include = F}
@@ -193,15 +175,21 @@ Priors for $\theta_{j1}$:
 $\theta_{j1} \sim N(\mu_{j}, \sigma^2)$  \newline
 $\sigma^2 \sim InvGamma(0.5, 0.5)$ \newline
 $\mu_{j} \sim N(h_j,7.5^2)$  \newline
-$h_j = 0.1*\hat{\text{Presidental Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
-$\text{Presidental Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
+$h_j = 0.1*\hat{\text{Presidential Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
+$\text{Presidential Fundamentals}_i = 100 - \text{Incumbent Party Vote Share}_i$ \newline
+$\text{Incumbent Party Vote Share}_i= \gamma_0 + \gamma_1\text{June Approval Rating for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
 $\epsilon_i \sim N(0, \phi^2)$  \newline
 
-For our presidential model, we wanted to incorporate state-level correlations that differ between each pair of states. For example, Wisconsin is much more similar to its Great Lakes neighbor Michigan both geographically and demographically than it is to Arizona, which is in the Southwest and has a much larger Hispanic population. So, we would expect that Wisconsin and Michigan have a higher correlation in their election results than Wisconsin and Arizona. In order to incorporate this into our presidential model, we used a multivariate normal distribution to model two-party vote share in each state, which allowed us to specify a covariance matrix for the states. We used a covariance matrix which was downloaded from the Economist forecast model (Gelman, 2020). These similarities between states were calculated by comparing their demographic and political profiles, such as the state's share of white voters and how urban/rural the state is.
 
-*where explain variables later the S&P stock growth three months prior to the election*
-*also explain i where i is each year in that Abramowitz data - kinda explained this in Appendix B*.
-In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year's economic data and June approval ratings of the incumbent party. When computing the prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally a bit more localized (Gillespie et al. 2020).
+
+<!-- $\text{Presidential Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline -->
+<!-- $\epsilon_i \sim N(0, \phi^2)$  \newline -->
+
+For our presidential model, we wanted to incorporate state-level correlations that differ between each pair of states. For example, Wisconsin is much more similar to its Great Lakes neighbor Michigan both geographically and demographically than it is to Arizona, which is in the Southwest and has a much larger Hispanic population. So, we would expect that Wisconsin and Michigan have a higher correlation in their election results than Wisconsin and Arizona. In order to incorporate this into our presidential model, we used a multivariate normal distribution to model two-party vote share in each state, which allowed us to specify a covariance matrix for the states. We used a covariance matrix which was downloaded from *The Economist* forecast model (Gelman, 2020). These similarities between states were calculated by comparing their demographic and political profiles, such as the state's share of white voters and how urban/rural the state is.
+
+In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We first predicted incument party's national vote share ($\text{Incumbent Party Vote Share}_i$) based on the corresponding election year $i$'s economic data and June net approval rating of the incumbent party. Since in the 2020 presidential election Biden's Democratic party is not the incumbent party, $\text{Presidental Fundamentals}_{2020}$, which can be though of as the national level prior of Biden's vote share, is 100 minus $\text{Incumbent Party Vote Share}_{2020}$. When computing the state specific prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to the state's partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally more localized (Gillespie et al. 2020). 
+
+<!-- In essence, the presidential model used fundamentals and vote share from partisan lean as a starting point for the expected vote share for the Democratic party, and update the priors with presidential election polling data. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that used historical election year $i$'s economic data and June net approval rating of the incumbent party (we can think of $\text{Presidental Fundamentals}_i$ as some sort of national prior for Demogratic Party's vote share). When computing the state specific prior, 10% weight is allocated to the fundamentals based on economic data and 90% weight to the state's partisan lean because the effect of economic indicators has shrunk over the years as electorates became increasingly polarized (The Economist, 2020). In addition, economic indicators are particularly volatile in 2020 due to the COVID-19 pandemic. We chose not to do this for the U.S. House and Senate models because these races are generally more localized (Gillespie et al. 2020). -->
 
 *one sentence on hyperparameters*
 
@@ -624,11 +612,18 @@ Priors for $\theta_{j1}$:
 $\theta_{j1} \sim N(\mu_{j}, \sigma^2)$  \newline
 $\sigma^2 \sim InvGamma(0.5, 0.5)$ \newline
 $\mu_{j} \sim N(h_j,7.5^2)$  \newline
-$h_j = 0.1*\hat{\text{Presidental Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
-$\text{Presidental Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
+$h_j = 0.1*\hat{\text{Presidential Fundamentals}_{2020}} + 0.9*\text{Vote Share from Partisan Lean}_j$  \newline
+$\text{Presidential Fundamentals}_i = 100 - \text{Incumbent Party Vote Share}_i$ \newline
+$\text{Incumbent Party Vote Share}_i= \gamma_0 + \gamma_1\text{June Approval Rating for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline
 $\epsilon_i \sim N(0, \phi^2)$  \newline
 
-A hierarchical model was used, where Biden's share of the two-party vote for poll $k$ on any given day $t$ for state $j$ is modelled as a normal distribution with mean $\theta_{jt}$ and variance $\sigma^2_{yj}$. A random walk was used to calculate $\theta_{jt}$ for each day $t$ before the election (up until 30 days before the election) from $\theta_{j t-1}$ and $\Sigma$, a $JxJ$ state covariance matrix. The mean $h_j$ of the normal prior on $\mu_j$ (which is the mean of the normal prior on $\theta_{j1}$) was calculated by multiplying the economic fundamentals $\text{Presidental Fundamentals}_i$ for $i = 2020$ by 0.1 and state partisan lean by 0.9, then summing those two values. We predicted $\text{Presidental Fundamentals}_i$ from a linear regression model that had historical election year's June approval rating of the incumbent party, three month stock growth, and 2nd quarter real income growth as predictors. *keep?*
+
+<!-- $\text{Presidental Fundamentals}_i = \gamma_0 + \gamma_1\text{June Approval Ratings for Incumbent Party}_i + \gamma_2\text{Three Month Stock Growth}_i + \gamma_3\text{2nd Quarter Real Income Growth}_i +\epsilon_i$  \newline -->
+<!-- $\epsilon_i \sim N(0, \phi^2)$  \newline -->
+
+A hierarchical model was used, where Biden's share of the two-party vote for poll $k$ on any given day $t$ for state $j$ is modelled as a normal distribution with mean $\theta_{jt}$ and variance $\sigma^2_{yj}$. A random walk was used to calculate $\theta_{jt}$ for each day $t$ before the election (up until 30 days before the election) from $\theta_{j t-1}$ and $\Sigma$, a $JxJ$ state covariance matrix. The mean $h_j$ of the normal prior on $\mu_j$ (which is the mean of the normal prior on $\theta_{j1}$) was calculated by multiplying the economic fundamentals $\text{Presidental Fundamentals}_i$ for $i = 2020$ by 0.1 and state partisan lean by 0.9, then summing those two values. 
+
+We predicted $\text{Incumbent Party Vote Share}_{2020}$ (i.e. Republican Party's national vote share in the 2020 election) from a linear regression model that had historical election year's June approval rating of the incumbent party, three month stock growth, and 2nd quarter real income growth as predictors. We borrowed this idea from the "Time for Change" model which assumes that presidential election is referendum on the performance of incumbent president (Alan Abramowitz, 2008). Then we used 100 minus $\text{Incumbent Party Vote Share}_{2020}$ to obtain the predicted vote share for Democrats ($\text{Presidential Fundamentals}_{2020}$). 
 
 ### Raw Model Output
 
@@ -754,9 +749,44 @@ cat("mean Rhat:", mean(as.data.frame(jags_sims_house$BUGSoutput$summary)$Rhat), 
 cat("mean effective sample size:", mean(as.data.frame(jags_sims_house$BUGSoutput$summary)$n.eff))
 ```
 
-
+\newpage
 
 # Appendix B
+
+### Presidential Election Model: 
+ + `2020 US presidential election polls - all_polls.csv`: 2020 U.S. Presidential Election Polls compiled by *The Economist*. Available at https://projects.economist.com/us-2020-forecast/president/how-this-works. 
+        + We only used poll responses from likely voters in the battleground states within 30 days prior to the election date. From the poll responses we calculated Biden's vote share in the two-party race in each poll($Y_k$).
+
+ + `partisan_leans_538.csv`: effect of partisan lean on the Democratic candidate's presidential election vote share in each state. Available at https://github.com/fivethirtyeight/data/tree/master/partisan-lean.
+        + 90% weight is allocated to this variable $\text{Vote Share from Partisan Lean}_j$ when computing hyperparameter $h_j$ for each state $j$. 
+        
+ + `abramowitz_data.csv`: downloaded from Andrew Gelman's Github repository on the 2020 Presidential Election. Available at https://github.com/TheEconomist/us-potus-model.
+        + This data set contains information on each of the 1948-2016 election year $i$'s annualized 2nd quarter GDP performance (not used due to its abnormally low value in 2020), incumbent party's June net approval rating ($\text{June Approval Ratings for Incumbent Party}_i$) and incumbent party's national vote share ($\text{Presidental Fundamentals}_i$). 
+        
+ + `states_cov_matrix_full.csv`: covariance matrix of states which takes into account similarity between states based on their demographic and political profiles. Retrieved from Andrew Gelman's Github repository on the 2020 Presidential Election (https://github.com/TheEconomist/us-potus-model). 
+        + The covariance matrix corresponds to $S$, the scale matrix in the prior distribution of $\Sigma$ 
+        
+ + `abramowitz_additional.csv`: we supplemented `abramowitz_data.csv` with the corresponding year $i$'s 2nd quarter real income growth compared to one year ago ($\text{2nd Quarter Real Income Growth}_i$) and S&P stock performance 3 months prior to the election date ($\text{Three Month Stock Growth}_i$). Data sets are from https://fred.stlouisfed.org/series/A067RO1Q156NBEA and https://www.multpl.com/s-p-500-historical-prices/table/by-month. 
+        + We fitted a linear regression model on historical incumbent party's national vote share with $\text{June Approval Ratings for Incumbent Party}$, $\text{2nd Quarter Real Income Growth}$, and $\text{Three Month Stock Growth}$ as predictors. We then predicted this year's incumbent party's national vote share (i.e. Republican's national vote share) and used 100 minus the predicted value to obtain Democrat's national vote share ($\text{Presidental Fundamentals}_{2020}$). We can think of $\text{Presidental Fundamentals}_{2020}$ as a national level prior. 10% weight is allocated to the "national prior" when computing the state specific prior $h_j$.
+
+```{r pres-fundamentals-table-kable, echo=F}
+abramowitz <- read.csv('abramowitz_additional.csv') 
+abramowitz_display <- abramowitz %>%
+  select(year, incvote, deminc, juneapp, q2gdp, three_month_stock_growth,q2_real_income_growth)
+
+```
+
+
+
+### Senate Election Model: 
+- `senate_polls.csv`: Senate election polls compiled by *FiveThirtyEight* https://projects.fivethirtyeight.com/polls-page/senate_polls.csv. 
+- `partisan_leans_538.csv`: same as the data set in presidential election model
+- We also incroporated incumbency advantage in the model, which as *FiveThirtyEight* suggests, is on average 2.6 for senate incumbents (https://fivethirtyeight.com/features/how-much-was-incumbency-worth-in-2018/).
+
+### House Election Model (for North Carolina):
+- `house_polls.csv`: House election polls compiled by *FiveThirtyEight*. We only used polls related to the NC senate race. Available at https://projects.fivethirtyeight.com/polls-page/house_polls.csv. 
+- `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
+
 
 # Appendix C 
 
@@ -909,6 +939,8 @@ Retrieved October 31, 2020 from https://fivethirtyeight.com/features/registered-
 \newline
 41. McDonald, M. (2020). 2020 General Election Early Vote Statistics. Retrieved November 01, 2020, from https://electproject.github.io/Early-Vote-2020G/index.html
 42. Morley, M. (1905). Election Emergencies: Voting in the Wake of Natural Disasters and Terrorist Attacks, 67 Emory L. J. 545. Available at: https://scholarlycommons.law.emory.edu/elj/vol67/iss3/6
+
+?? Abramawitz, A. (2008). Forecasting the 2008Presidential Election with theTime-for-Change Model. Political Science and Politics Vol. 41, No. 4 (Oct., 2008), pp. 691-695. https://www.jstor.org/stable/20452296?seq=1#metadata_info_tab_contents
 
 ## Additional EDA
 ```{r Additional EDA, echo=F, fig.width=8,fig.height=4, fig.align='center', fig.cap="Additional Presidential Election Data Visualization"}
