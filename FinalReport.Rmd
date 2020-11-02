@@ -43,6 +43,8 @@ pkgTest("stringi")
 pkgTest("ggplotify")
 pkgTest("tidybayes") # easy residuals
 pkgTest("rgdal")
+pkgTest("usmap")
+pkgTest("directlabels")
 ```
 
 ```{r packages, include=FALSE, message = F}
@@ -500,7 +502,6 @@ download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201
 system("unzip nc_map.zip")
 
 nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
-
 ```
 
 ```{r, echo = F, fig.height = 3, fig.width = 6,  message = F, warning = F, fig.cap = "\\label{housemap} Plot of Predicted Senate Results for States of Interest on Election Day"}
@@ -551,6 +552,11 @@ ggplot() +
     scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 50,
                        aesthetics = "fill", name = "Republican Vote Share", label = scales::comma) + 
       geom_text(data=rnames, aes(long, lat, label = id), size=3) + theme_void()
+```
+
+```{r , echo = F, fig.height = 3, fig.width = 6,  message = F, warning = F, fig.cap = "\\label{backuphouseplot} Plot of Predicted Senate Results for States of Interest on Election Day"}
+
+
 ```
 
 From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From Figure \ref{housemap} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
