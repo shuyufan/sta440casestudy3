@@ -766,13 +766,22 @@ cat("mean effective sample size:", mean(as.data.frame(jags_sims_house$BUGSoutput
  + `states_cov_matrix_full.csv`: covariance matrix of states which takes into account similarity between states based on their demographic and political profiles. Retrieved from Andrew Gelman's Github repository on the 2020 Presidential Election (https://github.com/TheEconomist/us-potus-model). 
         + The covariance matrix corresponds to $S$, the scale matrix in the prior distribution of $\Sigma$ 
         
- + `abramowitz_additional.csv`: we supplemented `abramowitz_data.csv` with the corresponding year $i$'s 2nd quarter real income growth compared to one year ago ($\text{2nd Quarter Real Income Growth}_i$) and S&P stock performance 3 months prior to the election date ($\text{Three Month Stock Growth}_i$). Data sets are from https://fred.stlouisfed.org/series/A067RO1Q156NBEA and https://www.multpl.com/s-p-500-historical-prices/table/by-month. 
+ + `abramowitz_additional.csv`: we supplemented `abramowitz_data.csv` with the corresponding year $i$'s 2nd quarter real income growth compared to one year ago ($\text{2nd Quarter Real Income Growth}_i$) and S&P stock performance 3 months prior to the election date ($\text{Three Month Stock Growth}_i$). Data sets are from https://fred.stlouisfed.org/series/A067RO1Q156NBEA and https://www.multpl.com/s-p-500-historical-prices/table/by-month. A subset of the combined data set is displayed below. *check where the table is*
         + We fitted a linear regression model on historical incumbent party's national vote share with $\text{June Approval Ratings for Incumbent Party}$, $\text{2nd Quarter Real Income Growth}$, and $\text{Three Month Stock Growth}$ as predictors. We then predicted this year's incumbent party's national vote share (i.e. Republican's national vote share) and used 100 minus the predicted value to obtain Democrat's national vote share ($\text{Presidental Fundamentals}_{2020}$). We can think of $\text{Presidental Fundamentals}_{2020}$ as a national level prior. 10% weight is allocated to the "national prior" when computing the state specific prior $h_j$.
 
 ```{r pres-fundamentals-table-kable, echo=F}
 abramowitz <- read.csv('abramowitz_additional.csv') 
 abramowitz_display <- abramowitz %>%
-  select(year, incvote, deminc, juneapp, q2gdp, three_month_stock_growth,q2_real_income_growth)
+  select(year, incvote, deminc, juneapp, q2gdp, three_month_stock_growth,q2_real_income_growth) %>%
+  mutate(deminc = case_when(deminc == "1" ~ "Yes",
+                            TRUE ~ "No")) %>%
+  arrange(desc(year)) %>%
+  head() 
+
+names(abramowitz_display) <- c("year", "Incumbent Party Vote Share", "Democrat Incumbency", "Incumbent Party June Net Approval", "2nd Quarter GDP", "3 Month Stock Growth", "2nd Quarter Real Income Growth")
+
+abramowitz_display %>%
+  kable()
 
 ```
 
