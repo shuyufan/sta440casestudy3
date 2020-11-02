@@ -46,6 +46,8 @@ pkgTest("broom")
 pkgTest("rgdal")
 pkgTest("usmap")
 pkgTest("directlabels")
+pkgTest("sf")
+pkgTest("hexbin")
 ```
 
 ```{r packages, include=FALSE, message = F}
@@ -70,6 +72,8 @@ library(ggplotify)
 library(tidybayes) # easy residuals
 library(usmap)
 library(directlabels)
+library(sf)
+library(hexbin)
 #library(xtable)
 ```
 
@@ -497,19 +501,54 @@ rownames(house_res) = c("District 1", "District 2", "District 3", "District 4",
 kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts")
 ```
 
+```{r , echo = F, fig.height = 3, fig.width = 6,  message = F, warning = F, fig.cap = "\\label{backuphouseplot} Plot of Predicted Senate Results for States of Interest on Election Day"}
+rep_vote_shares_df = data.frame(dist = seq(1:13), vote_share = rep_vote_shares)
+
+rep_vote_shares_df$x = c(11, 9, 10, 7, 3, 6, 9, 8, 7, 2, 1, 4, 5)
+rep_vote_shares_df$y = c(3, 3, 2, 3, 3, 2, 1, 2, 1, 2, 3, 2, 3)
+
+heatmap_mat = NULL
+for (r in 1:nrow(rep_vote_shares_df)) {
+  x = rep_vote_shares_df$x[r]
+  y = rep_vote_shares_df$y[r]
+  times = 100-round(rep_vote_shares_df$vote_share[r])
+  dist = rep_vote_shares_df$dist[r]
+  new_chunk = matrix(rep(cbind(x,y, dist),times),times,byrow = TRUE)
+    heatmap_mat = rbind(heatmap_mat, new_chunk)
+
+}
+
+heatmap_df = data.frame(heatmap_mat)
+
+ggplot(heatmap_df, aes(X1, X2,label = dist)) +geom_hex(binwidth = c(2, 1))+geom_text(aes(label=X3),hjust=0, vjust=1, size = 3) + scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 50,
+                       aesthetics = "fill", name = "Democrat Vote Share", label = scales::comma) + scale_x_continuous(limits = c(0,13)) + scale_y_continuous(limits = c(0, 4)) + theme_void()
+```
+
 ```{r, include = F, message = F, warning = F}
-download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
+# download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
+# system("unzip nc_map.zip")
 
-system("unzip nc_map.zip")
+# don't download if already downloaded
+destfile="./nc_map.zip" 
+fileURL <-
+  "https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile"   
+if (!file.exists(destfile)) {
+  download.file(fileURL, destfile,method="auto") 
+}
 
-nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
+# unzip file
+# 1)
+# system("unzip nc_map.zip")
+# 2)
+unzip("nc_map.zip")
+
+nc_cong_dist <- rgdal:: readOGR("C-Goodwin-A-1-TC.shp")
 ```
 
 ```{r, echo = F, fig.height = 3, fig.width = 6,  message = F, warning = F, fig.cap = "\\label{housemap} Plot of Predicted Senate Results for States of Interest on Election Day"}
 
 # 'fortify' the data to get a dataframe format required by ggplot2
 nc_cong_dist_df <- broom::tidy(nc_cong_dist, region = "DISTRICT")
-rep_vote_shares_df = data.frame(dist = seq(1:13), vote_share = rep_vote_shares)
 nc_cong_dist_vs_df = merge(nc_cong_dist_df,rep_vote_shares_df, all.x = TRUE, by.x = "id", by.y = "dist" ) %>%
   mutate(binned_rep_vs = case_when(
     vote_share >= 75 ~ 4,
@@ -555,12 +594,7 @@ ggplot() +
       geom_text(data=rnames, aes(long, lat, label = id), size=3) + theme_void()
 ```
 
-```{r , echo = F, fig.height = 3, fig.width = 6,  message = F, warning = F, fig.cap = "\\label{backuphouseplot} Plot of Predicted Senate Results for States of Interest on Election Day"}
-
-
-```
-
-From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From Figure \ref{housemap} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
+From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From Figure \ref{backuphouseplot} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
 
 
 ## Model Validation and Sensitivity Analysis
