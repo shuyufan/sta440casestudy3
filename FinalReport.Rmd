@@ -253,7 +253,7 @@ jags_sims_mv = readRDS("pres_model_output.rds")
 ```
 
 ```{r biden-prob-win, include = F}
-states = c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX")
+states = sort(c("MN", "NH", "MI", "WI", "PA", "NV", "FL", "AZ", "NC", "GA", "IA", "OH", "TX"))
 N_states = length(states)
 N_days = 30
 
@@ -303,7 +303,7 @@ trump_pwin_time = NULL
 for (j in 1:N_states) {
   new_col = NULL
   for (t in 1:N_days) {
-    new_col[t] <- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] < 50)
+    new_col[t] <- 1- mean(jags_sims_mv$BUGSoutput$sims.list$theta[,j,t] > 50)
   }
   trump_pwin_time = cbind(trump_pwin_time, new_col)
 }
