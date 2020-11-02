@@ -325,6 +325,8 @@ model <- function(){
   for(j in 2:N_days){
     for(i in 1:N_states){
       beta[i,j] ~ dnorm(beta[i,j-1],pow(sigma2_beta[i],-1))
+      res[i,j] = beta[i,j] - beta[i,j-1]
+
     }
   }
 
@@ -358,7 +360,7 @@ model <- function(){
 ```{r run_model,eval=TRUE,cache=TRUE}
 set.seed(123) # REMEMEBR TO CHANGE 
 #be sure to add your added parameters to parameters.to.save
-jags_sims_house <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y"),
+jags_sims_house <- jags(data = jags_data,model.file = model,parameters.to.save = c("beta","sigma2_beta","p","sigma2_y", "res"),
                   n.iter = 10000)
 
 saveRDS(jags_sims_house, "house_model_output.rds")

@@ -195,11 +195,11 @@ $$
 where:
 $$
 \begin{aligned}
-Income \ Category_s \in \{Median \ Income \ \$46864-\$52798,  \ Median \ Income \ \$52798-\$64509, \ Median \ Income > \$64509\} \\
-Gender \ Category_g \in \{Male, Unspecified\} \\
-Race \ Category_r \in \{Black, Other\} \\
-Age \ Category_a \in \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
-Party \ Category_p \in \{Republican, \ Other\}
+Income \ Category_s &\in \{Median \ Income \ \$46864-\$52798, \ Median \ Income \ \$52798-\$64509, \\ &\ Median \ Income > \$64509\} \\
+Gender \ Category_g &\in \{Male, Unspecified\} \\
+Race \ Category_r &\in \{Black, Other\} \\
+Age \ Category_a &\in \{Age \ 30-44, \ Age \ 45-59, \ Age \ 60+\} \\
+Party \ Category_p &\in \{Republican, \ Other\}
 \end{aligned}
 $$
 
