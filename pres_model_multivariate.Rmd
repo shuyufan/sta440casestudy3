@@ -192,7 +192,7 @@ model_mv <- function(){
   
   #Use your hierarhciacl prior for sigma2_y from before 
   for(j in 1:N_states){
-      mu0[j] ~ dnorm(priors[j],pow(7.5,-2))
+      mu0[j] ~ dnorm(priors[j],pow(7.5,-1))
 
       sigma2_y[j] = 1/sigma2_y_inv[j]
       sigma2_y_inv[j] ~ dgamma(nu_y,nu_y*tau_y) 
@@ -274,6 +274,7 @@ jags_data$states_corr_mat <- states_cov_matrix
 #eigen(test_matrix)
 
 #be sure to add your added parameters to parameters.to.save
+set.seed(2)
 jags_sims_mv <- jags(data = jags_data,model.file = model_mv, parameters.to.save = c("theta","Sigma","p","sigma2_y", "res"),
 n.iter = 10000)
 
