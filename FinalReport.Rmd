@@ -42,6 +42,9 @@ pkgTest("stringr")
 pkgTest("stringi")
 pkgTest("ggplotify")
 pkgTest("tidybayes") # easy residuals
+pkgTest("broom")
+pkgTest("usmap")
+pkgTest("directlabels")
 ```
 
 ```{r packages, include=FALSE, message = F}
@@ -54,7 +57,7 @@ library(grid)
 library(xtable)
 library(coda)
 library(bayesplot)
-library(rstanarm)
+#library(rstanarm)
 library(dplyr)
 library(reshape2)
 library(knitr)
@@ -62,7 +65,7 @@ library(tidyverse)
 library(stringr)
 library(stringi)
 library(ggplotify)
-library(brms)
+#library(brms)
 library(tidybayes) # easy residuals
 library(usmap)
 library(directlabels)
