@@ -42,6 +42,7 @@ pkgTest("stringr")
 pkgTest("stringi")
 pkgTest("ggplotify")
 pkgTest("tidybayes") # easy residuals
+pkgTest("rgdal")
 ```
 
 ```{r packages, include=FALSE, message = F}
@@ -494,8 +495,8 @@ kable(house_res, caption = "Predicted Republican Vote Share in NC's 13 Districts
 ```
 
 ```{r, include = F, message = F, warning = F}
-
 download.file("https://webservices.ncleg.gov/ViewBillDocument/2019/6953/0/HB%201029,%203rd%20Edition%20-%20Shapefile", destfile = "nc_map.zip")
+
 system("unzip nc_map.zip")
 
 nc_cong_dist <- rgdal::readOGR("C-Goodwin-A-1-TC.shp")
