@@ -223,7 +223,7 @@ For predicting control of the U.S. Senate, things are complicated slightly by th
 
 ### House Election Model
 
-The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on district $j$ (where $j$ is in districts $1, \cdots, 11, 13$ of North Carolina). For district 12, the vote share is coded as 100 because there is only one candidate, and she is a Democrat. Note that, due to the scarcity of poll responses for the NC House elections, we included all poll responses within 115 days of the election.
+The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=30$ days) before the election and was conducted on district $j$ (where $j$ is in districts $1, \cdots, 11, 13$ of North Carolina). For district 12, the vote share is coded as 100 because there is only one candidate, and she is a Democrat. Note that, due to the scarcity of poll responses for the NC House elections, we included all poll responses within 115 days of the election.
 
 $Y_k \sim N(\beta_{jt},\sigma^2_{yj})$ \newline
 $\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$ \newline
@@ -552,15 +552,30 @@ ggplot() +
 
 From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From \ref{housemap} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
 
+
 ## Model Validation and Sensitivity Analysis
 
-For model validation, we trained our 2020 presidential election model on 2016 polling data and adjusted fundamentals accordingly. For instance, instead of predicting on 2020 economic indicators, we removed the year 2016 from the fundamentals training data and predicted on 2016 economic indicators. This 2016 model produced a 7% probability that Trump would win the presidency, which is within the range of predictions by respected models available in 2016 (The Economist, 2016). Polls were skewed in 2016, so it is expected that the model would not be entirely accurate. 
+For model validation, we trained our 2020 presidential election model on 2016 polling data and adjusted fundamentals accordingly. For instance, instead of predicting on 2020 economic indicators, we removed the year 2016 from the fundamentals training data and predicted on 2016 economic indicators. This 2016 model produced a 7% probability that Trump would win the presidency, which is within the range of predictions by respected models available in 2016 (The Economist, 2016). Polls were skewed in 2016, so it is expected that the model would not be entirely accurate.
 
-For sensitivity analysis, we adjusted the relative weights placed on the components of prior for the presidential election model. Instead of 10% fundamentals and 90% partisan lean, we ran a model with 50% fundamentals and 50% partisan lean multiple times and the predictions for Trump's re-election probability (approximately 0.25) was generally higher than that from our main model, which makes sense since economic fundamental model contains stock growth and is slightly favored toward Trump. Thus, we also see a decrease in Trump's re-election probability (the probability was about 0.13) when we remove fundamentals from our model. However, the sensitivity analysis models still point to an unlikely re-election. In addition, we ran the house model with 50% voter turnout and 50% partisan lean instead of a 10%/90% split and found that there was about a 2-5 predicted Republican vote share difference across NC districts and an overall decrease in the probability of Republican vote share compared to our main model.
+For sensitivity analysis, we adjusted the relative weights placed on the components of prior for the presidential election model. Instead of 10% fundamentals and 90% partisan lean, we ran a model with 50% fundamentals and 50% partisan lean multiple times and the predictions for Trump's re-election probability was generally higher (approximately 0.25) than that from our main model, which makes sense since economic fundamental model contains stock growth and is slightly favored toward Trump. However, the sensitivity analysis models still point to an unlikely re-election.
 
-We also adjusted the prior parameters for sensitivity analysis. In both the senate and house model, changing the priors from $\nu_y, \tau_y, \nu_\beta, \tau_\beta \sim Uniform(0,100)$ to $\nu_y, \nu_\beta \sim Uniform(0,10), \tau_y, \tau_\beta \sim Uniform(0,1000)$ to increase the variance had little change on the estimates. Changing the relevant uniform priors in the presidential model resulted in a slightly higher probability of Trump's re-election (the probability was about 0.23), but again, this still indicates an unlikely re-election. 
+$\sigma_{y j}$ 
 
-Using a stronger prior for the variance for the estimate on the day of election ($\sigma^2 \sim InvGamma(10,0.5)$) for the senate and presidential models resulted in comparable performance to our main senate model while the presidential model had higher win probabilities and slightly narrower credible intervals for Trump compared to our main model (the win probability was about 0.34). Similarly, reducing the variance for the house model ($\beta_{ji} \sim N(h_j, 1)$) also resulted in comparable performance, though the quantiles were more narrow, as expected (Linzer, 2013). To account for shock events, we could modify the priors to increase the variance associated with $Y_k$ to reflect the increased uncertainty due to the shock event in each relevant model. 
+
+
+President model: unif(0,1) -- I think this makes it more uninformative for gamma (does this hold for inv gamma?)
+Pr(Trump wins) = 0.128, 0.1176667, 0.2456667
+TLDR: comparable?
+Senate model: 
+mu0 ~ N(priors, 1) (less variance)
+Pr(Rep control) = 0.1656667
+unif(0,1)
+Pr(Rep control) = 0.1436667
+sigma2_0_inv ~ gamma(3,0.5) (stronger prior?)
+Pr(Rep control) = 0.07466667
+TLDR: Tillis vote share + confidence intervals have been comparable, probability of republican control more sensitive
+
+To account for shock events, 
 
 ## Diagnostics
 
@@ -632,7 +647,7 @@ Since the outcome of the election is decided by Electoral College vote, for each
 
 The purpose of the Senate model is to predict whether the U.S. Senate remains in Republican control (and to predict the outcome for the NC Senate race). The states included in the model are Alaska, Arizona, Colorado, Georgia, Iowa, Kansas, Maine, Michigan, Montana, North Carolina, South Carolina, and Texas. These states were chosen because they are deemed by political analysts as being competitive states for the Senate race in 2020. There is also a special election for the Senate in Georgia in addition to the regularly scheduled election. For the Georgia special election, our model sums up the support for Republican candidates and compares that to the sum of the support for Democratic candidates, and treats this election in the same way as the other states.
 
-The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=60$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
+The response we will use is $Y_k$, the Democrat candidate's share of the two-party vote using the following model where the poll $k$ (of $K$=*fill in* polls) ended $t$ days (of $T=30$ days) before the election and was conducted on state $j$ (of $J$=14 states of interest). 
 
 $Y_k \sim N(\beta_{jt},\sigma^2_{yj})$ \newline
 $\beta_{jt} \sim N(\beta_{jt-1},\sigma^2_{\beta j})$ \newline
@@ -740,7 +755,7 @@ cat("mean effective sample size:", mean(as.data.frame(jags_sims_house$BUGSoutput
 
 ### Presidential Election Model: 
  + `2020 US presidential election polls - all_polls.csv`: 2020 U.S. Presidential Election Polls compiled by *The Economist*. Available at https://projects.economist.com/us-2020-forecast/president/how-this-works. 
-        + We only used poll responses from likely voters in the battleground states within 30 days prior to the election date. From the poll responses we calculated Biden's vote share in the two-party race in each poll($Y_k$).
+        + We only used poll responses from likely voters in the battleground states within 30 days prior to the election date. From the poll responses we calculated Biden's vote share in the two-party race in each poll ($Y_k$).
 
  + `partisan_leans_538.csv`: effect of partisan lean on the Democratic candidate's presidential election vote share in each state. Available at https://github.com/fivethirtyeight/data/tree/master/partisan-lean.
         + 90% weight is allocated to this variable $\text{Vote Share from Partisan Lean}_j$ when computing hyperparameter $h_j$ for each state $j$. 
@@ -763,7 +778,7 @@ abramowitz_display <- abramowitz %>%
   arrange(desc(year)) %>%
   head() 
 
-names(abramowitz_display) <- c("year", "Incumbent Party Vote Share", "Democrat Incumbency", "Incumbent Party June Net Approval", "2nd Quarter GDP", "3 Month Stock Growth", "2nd Quarter Real Income Growth")
+names(abramowitz_display) <- c("Year", "Incumbent Party Vote Share", "Democrat Incumbency", "Incumbent Party June Net Approval", "2nd Quarter GDP Growth", "3 Month Stock Growth", "2nd Quarter Real Income Growth")
 
 abramowitz_display %>%
   kable()
@@ -773,13 +788,18 @@ abramowitz_display %>%
 
 
 ### Senate Election Model: 
-- `senate_polls.csv`: Senate election polls compiled by *FiveThirtyEight* https://projects.fivethirtyeight.com/polls-page/senate_polls.csv. 
-- `partisan_leans_538.csv`: same as the data set in presidential election model
-- We also incroporated incumbency advantage in the model, which as *FiveThirtyEight* suggests, is on average 2.6 for senate incumbents (https://fivethirtyeight.com/features/how-much-was-incumbency-worth-in-2018/).
+ + `senate_polls.csv`: Senate election polls compiled by *FiveThirtyEight*. Available at https://projects.fivethirtyeight.com/polls-page/senate_polls.csv. 
+        + Similar to the presidential election prediction model, we only included poll responses from likely voters in the battleground states within 30 days prior to the senate election date. From the poll responses we calculated Democratic candidates' vote share in the two-party race in each poll ($Y_k$).
+ + `partisan_leans_538.csv`: same as the data set in presidential election model and we used this partisan lean in the calculation of prior hyperparameter $h_j$.
+ + We also incroporated incumbency advantage in calculating $h_j$. As *FiveThirtyEight* suggests, incumbency advantage is on average 2.6 for senate incumbents (https://fivethirtyeight.com/features/how-much-was-incumbency-worth-in-2018/).
+ + For NC Senate race only, we supplemented the prior with predicted voter turnout from the Interim Report model. 
 
 ### House Election Model (for North Carolina):
-- `house_polls.csv`: House election polls compiled by *FiveThirtyEight*. We only used polls related to the NC senate race. Available at https://projects.fivethirtyeight.com/polls-page/house_polls.csv. 
-- `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
+*not done yet*
+ + `house_polls.csv`: House election polls compiled by *FiveThirtyEight*. Available at https://projects.fivethirtyeight.com/polls-page/house_polls.csv. 
+        + We only used polls related to the NC House race. Due to the lack of poll responses for the NC House elections, we included all poll responses within 115 days of the election. 
+ + `ncvoter_1027_small.rds`: NC registered voter demographics information provided by the NC State Board of Elections (https://dl.ncsbe.gov/list.html). 
+        + Please refer to the Interim Report to see a detailed explanation of how voter turnout is modeled by registered voters' race, age, party affiliation, income and gender. 
 
 
 # Appendix C 
