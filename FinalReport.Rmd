@@ -552,30 +552,15 @@ ggplot() +
 
 From the table of predicted Republican vote share in the House elections for each district, it appears that the Republican candidate will win in districts 3, 5, 7, 8, 9, 10, 11, and 13 (where the lower bounds of the 95% confidence intervals for predicted vote share are also all above 50). From \ref{housemap} we can see that the vote share for districts 1, 2, 4, and 6 lean toward Democrat (note that the only candidate on the ballot for district 12 is a Democrat).
 
-
 ## Model Validation and Sensitivity Analysis
 
-For model validation, we trained our 2020 presidential election model on 2016 polling data and adjusted fundamentals accordingly. For instance, instead of predicting on 2020 economic indicators, we removed the year 2016 from the fundamentals training data and predicted on 2016 economic indicators. This 2016 model produced a 7% probability that Trump would win the presidency, which is within the range of predictions by respected models available in 2016 (The Economist, 2016). Polls were skewed in 2016, so it is expected that the model would not be entirely accurate.
+For model validation, we trained our 2020 presidential election model on 2016 polling data and adjusted fundamentals accordingly. For instance, instead of predicting on 2020 economic indicators, we removed the year 2016 from the fundamentals training data and predicted on 2016 economic indicators. This 2016 model produced a 7% probability that Trump would win the presidency, which is within the range of predictions by respected models available in 2016 (The Economist, 2016). Polls were skewed in 2016, so it is expected that the model would not be entirely accurate. 
 
-For sensitivity analysis, we adjusted the relative weights placed on the components of prior for the presidential election model. Instead of 10% fundamentals and 90% partisan lean, we ran a model with 50% fundamentals and 50% partisan lean multiple times and the predictions for Trump's re-election probability was generally higher (approximately 0.25) than that from our main model, which makes sense since economic fundamental model contains stock growth and is slightly favored toward Trump. However, the sensitivity analysis models still point to an unlikely re-election.
+For sensitivity analysis, we adjusted the relative weights placed on the components of prior for the presidential election model. Instead of 10% fundamentals and 90% partisan lean, we ran a model with 50% fundamentals and 50% partisan lean multiple times and the predictions for Trump's re-election probability (approximately 0.25) was generally higher than that from our main model, which makes sense since economic fundamental model contains stock growth and is slightly favored toward Trump. Thus, we also see a decrease in Trump's re-election probability (the probability was about 0.13) when we remove fundamentals from our model. However, the sensitivity analysis models still point to an unlikely re-election. In addition, we ran the house model with 50% voter turnout and 50% partisan lean instead of a 10%/90% split and found that there was about a 2-5 predicted Republican vote share difference across NC districts and an overall decrease in the probability of Republican vote share compared to our main model.
 
-$\sigma_{y j}$ 
+We also adjusted the prior parameters for sensitivity analysis. In both the senate and house model, changing the priors from $\nu_y, \tau_y, \nu_\beta, \tau_\beta \sim Uniform(0,100)$ to $\nu_y, \nu_\beta \sim Uniform(0,10), \tau_y, \tau_\beta \sim Uniform(0,1000)$ to increase the variance had little change on the estimates. Changing the relevant uniform priors in the presidential model resulted in a slightly higher probability of Trump's re-election (the probability was about 0.23), but again, this still indicates an unlikely re-election. 
 
-
-
-President model: unif(0,1) -- I think this makes it more uninformative for gamma (does this hold for inv gamma?)
-Pr(Trump wins) = 0.128, 0.1176667, 0.2456667
-TLDR: comparable?
-Senate model: 
-mu0 ~ N(priors, 1) (less variance)
-Pr(Rep control) = 0.1656667
-unif(0,1)
-Pr(Rep control) = 0.1436667
-sigma2_0_inv ~ gamma(3,0.5) (stronger prior?)
-Pr(Rep control) = 0.07466667
-TLDR: Tillis vote share + confidence intervals have been comparable, probability of republican control more sensitive
-
-To account for shock events, 
+Using a stronger prior for the variance for the estimate on the day of election ($\sigma^2 \sim InvGamma(10,0.5)$) for the senate and presidential models resulted in comparable performance to our main senate model while the presidential model had higher win probabilities and slightly narrower credible intervals for Trump compared to our main model (the win probability was about 0.34). Similarly, reducing the variance for the house model ($\beta_{ji} \sim N(h_j, 1)$) also resulted in comparable performance, though the quantiles were more narrow, as expected (Linzer, 2013). To account for shock events, we could modify the priors to increase the variance associated with $Y_k$ to reflect the increased uncertainty due to the shock event in each relevant model. 
 
 ## Diagnostics
 
