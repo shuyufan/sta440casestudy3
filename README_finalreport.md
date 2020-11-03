@@ -11,6 +11,7 @@
 - `house_model_output.rds`: the rds file that contains model output from the House election model.
 - `grouped_voter_data.rds`: the rds file on 2020 registered voters in North Carolina that has been cleaned, used in the House election model.
 - `vote_share_df.Rdata`: the data file that contains vote share information from predicted turnout for 2020 voters in North Carolina, used in the House election model.
+- `electoral_votes.csv`: the data file that contains the electoral college vote quota for each state.
 
 ## Data
 ### Presidential Election Model: 
