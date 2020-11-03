@@ -1,11 +1,16 @@
 ## In This Directory
 - `FinalReport.Rmd`: this is the code for the report document. Nothing needs to be changed to knit the report.
+- `cleaned_econ_polls.rds`: the rds file that contains cleaned polling data from The Economist for presidential election as of Nov 2nd.
+- `cleaned_senate_polls.rds`: the rds file that contains cleaned polling data from FiveThirtyEight for Senate election as of Nov 2nd.
+- `cleaned_house_polls.rds`: the rds file that contains cleaned polling data from FiveThirtyEight for House election as of Nov 2nd.
 - `pres_model_multivariate.Rmd`: the is the code for running the presidential election model.
 - `pres_model_output.rds`: the rds file that contains model output from the presidential election model.
 - `senate_model.Rmd`: the is the code for running the Senate election model.
 - `senate_model_output.rds`: the rds file that contains model output from the Senate election model.
 - `house_model.Rmd`: the is the code for running the House election model.
 - `house_model_output.rds`: the rds file that contains model output from the House election model.
+- `grouped_voter_data.rds`: the rds file on 2020 registered voters in North Carolina that has been cleaned, used in the House election model.
+- `vote_share_df.Rdata`: the data file that contains vote share information from predicted turnout for 2020 voters in North Carolina, used in the House election model.
 
 ## Data
 ### Presidential Election Model: 
